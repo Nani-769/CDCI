@@ -1,0 +1,1541 @@
+<p-toast></p-toast>
+
+<!-- ═══ PRIOR TOX MODAL ═══ -->
+<p-dialog [(visible)]="showPriorToxModal" [modal]="true" [draggable]="false" [resizable]="false"
+  header="⚠️ Prior Cycle Toxicities — Cycle 2 (4 Jan 2025)" styleClass="tox-modal" [style]="{width:'700px',maxWidth:'95vw'}">
+  <div class="alert-box alert-warn" style="margin-bottom:14px">
+    <span class="alert-ico">⚠️</span>
+    <div class="alert-body">
+      <div class="alert-title">2 Grade ≥ 2 toxicities recorded last cycle</div>
+      <div class="alert-sub">Review carefully before confirming Cycle 3 continuation.</div>
+    </div>
+  </div>
+  <p-table [value]="[
+    {toxicity:'Neutropenia',grade:'G3',attr:'Probable',action:'G-CSF D5–8; 25% delay'},
+    {toxicity:'Nausea / Vomiting',grade:'G2',attr:'Possible',action:'Antiemetic escalated'},
+    {toxicity:'Peripheral Neuropathy',grade:'G1',attr:'Probable',action:'Observation'}
+  ]" styleClass="p-datatable-sm tox-table">
+    <ng-template pTemplate="header">
+      <tr><th>Toxicity</th><th>Grade</th><th>Attribution</th><th>Action Taken</th></tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td>{{row.toxicity}}</td>
+        <td><span class="tox-grade" [ngClass]="'tg-'+row.grade.toLowerCase()">{{row.grade}}</span></td>
+        <td><span class="chip" [ngClass]="row.attr==='Probable'?'chip-red':'chip-amber'">{{row.attr}}</span></td>
+        <td>{{row.action}}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+  <div class="alert-box alert-info" style="margin-top:14px">
+    <span class="alert-ico">💡</span>
+    <div class="alert-body">
+      <div class="alert-title">Protocol Guidance: G3 Neutropenia</div>
+      <div class="alert-sub">Consider 20% Oxaliplatin dose reduction or mandatory G-CSF prophylaxis for Cycle 3.</div>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton label="Close" class="p-button-outlined" (click)="showPriorToxModal=false"></button>
+    <button pButton label="Acknowledge & Continue" (click)="showPriorToxModal=false;showToast('Toxicities acknowledged','warn')"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- ═══ VALIDATION MODAL ═══ -->
+<p-dialog [(visible)]="showValidationModal" [modal]="true" [draggable]="false"
+  header="⛔ Cannot Finalise — Incomplete Steps" [style]="{width:'500px',maxWidth:'95vw'}">
+  <div class="alert-box alert-danger" style="margin-bottom:12px">
+    <span class="alert-ico">⛔</span>
+    <div class="alert-body"><div class="alert-title">The following required steps are incomplete:</div></div>
+  </div>
+  <ul class="validation-list">
+    <li *ngFor="let err of validationErrors">{{err}}</li>
+  </ul>
+  <ng-template pTemplate="footer">
+    <button pButton label="Return to Form" class="p-button-outlined" (click)="showValidationModal=false"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- ═══ SHELL ═══ -->
+<div class="shell" [ngClass]="'visit-'+currentScreen">
+
+  <!-- ── TOPBAR ── -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="topbar-logo-mark">O</div>
+      <div>
+        <div class="topbar-logo-name">OncEMR</div>
+        <div class="topbar-logo-sub">Clinical Suite</div>
+      </div>
+    </div>
+    <div class="topbar-center">
+      <div class="topbar-crumb">OPD Queue → <span>Dr. Priya Nair, DM Medical Oncology</span></div>
+      <div class="topbar-sep"></div>
+      <div class="topbar-screen-switcher">
+        <button class="tss-btn" [class.active]="currentScreen==='firstvisit'" (click)="switchScreen('firstvisit')">1st Visit</button>
+        <button class="tss-btn" [class.active]="currentScreen==='decision'" (click)="switchScreen('decision')">Decision Visit</button>
+        <button class="tss-btn chemo" [class.active]="currentScreen==='chemo'" (click)="switchScreen('chemo')">Chemo Cycle 3</button>
+        <button class="tss-btn rt" [class.active]="currentScreen==='rt'" (click)="switchScreen('rt')">RT Fraction 3</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-alert-chip" (click)="switchScreen('chemo');showPriorToxModal=true">⚠ 1 Clinical Alert</div>
+      <div class="topbar-user">
+        <div class="topbar-avatar">PN</div>
+        <div class="topbar-username">Dr. Priya Nair</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PATIENT BANNER ── -->
+  <div class="pt-banner">
+    <div class="pt-banner-id">
+      <div class="pt-avatar">{{patientInitials}}</div>
+      <div class="pt-name-block">
+        <div class="pt-name">{{currentPatient?.name}}</div>
+        <div class="pt-sub">{{currentPatient?.age}} years · {{currentPatient?.sex}} · {{currentPatient?.diagnosis}}</div>
+      </div>
+    </div>
+    <div class="pt-chips">
+      <span class="chip chip-indigo" *ngIf="currentPatient?.visitType==='FIRST'">New Patient</span>
+      <span class="chip chip-violet" *ngIf="currentPatient?.visitType==='DECISION'">Decision Visit</span>
+      <span class="chip chip-amber" *ngIf="currentPatient?.visitType==='CHEMO'">On Chemotherapy</span>
+      <span class="chip chip-teal" *ngIf="currentPatient?.visitType==='RT'">On Radiation</span>
+    </div>
+    <div class="pt-stats-row">
+      <!-- First Visit Stats -->
+      <ng-container *ngIf="currentPatient?.visitType==='FIRST'">
+        <div class="pt-stat-item"><div class="pt-stat-label">UHID</div><div class="pt-stat-value">{{currentPatient.uhid||'Pending'}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Age / Sex</div><div class="pt-stat-value">{{currentPatient.age}}y / {{currentPatient.sex}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Allergies</div><div class="pt-stat-value ok">{{currentPatient.allergies}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Referred by</div><div class="pt-stat-value" style="font-size:11px">{{currentPatient.referredBy||'—'}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Reg. Date</div><div class="pt-stat-value">{{currentPatient.registeredOn}}</div></div>
+      </ng-container>
+      <!-- Decision Stats -->
+      <ng-container *ngIf="currentPatient?.visitType==='DECISION'">
+        <div class="pt-stat-item"><div class="pt-stat-label">UHID</div><div class="pt-stat-value">{{currentPatient.uhid}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">ECOG</div><div class="pt-stat-value ok">PS {{currentPatient.ecog}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Weight</div><div class="pt-stat-value">{{currentPatient.weight}} kg</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Stage</div><div class="pt-stat-value warn">Stage {{currentPatient.stage}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Allergies</div><div class="pt-stat-value ok">{{currentPatient.allergies}}</div></div>
+      </ng-container>
+      <!-- Chemo Stats -->
+      <ng-container *ngIf="currentPatient?.visitType==='CHEMO'">
+        <div class="pt-stat-item"><div class="pt-stat-label">UHID</div><div class="pt-stat-value">{{currentPatient.uhid}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">ECOG Today</div><div class="pt-stat-value ok">PS {{currentPatient.ecogToday}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Weight</div><div class="pt-stat-value mono" [ngClass]="weightDiffColor">{{currentPatient.weight}} kg ({{weightDiff}})</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">BSA</div><div class="pt-stat-value teal mono">{{currentPatient.bsa}} m²</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Allergies</div><div class="pt-stat-value ok">{{currentPatient.allergies}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Protocol</div><div class="pt-stat-value">{{currentPatient.protocol}} · C{{currentPatient.cycleCurrent}}/{{currentPatient.cycleTotal}}</div></div>
+      </ng-container>
+      <!-- RT Stats -->
+      <ng-container *ngIf="currentPatient?.visitType==='RT'">
+        <div class="pt-stat-item"><div class="pt-stat-label">UHID</div><div class="pt-stat-value">{{currentPatient.uhid}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">ECOG Today</div><div class="pt-stat-value ok">PS {{currentPatient.ecogToday}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Fraction</div><div class="pt-stat-value teal mono">{{currentPatient.fractionCurrent}} / {{currentPatient.fractionTotal}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Progress</div><div class="pt-stat-value teal">{{rtProgressPct}}% complete</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Technique</div><div class="pt-stat-value">{{currentPatient.technique}} · {{currentPatient.energy}}</div></div>
+        <div class="pt-stat-item"><div class="pt-stat-label">Allergies</div><div class="pt-stat-value warn">{{currentPatient.allergies}}</div></div>
+      </ng-container>
+    </div>
+    <div class="pt-actions">
+      <button pButton label="📄 Records" class="p-button-outlined p-button-sm" (click)="showToast('Opening patient record…')"></button>
+    </div>
+  </div>
+
+  <!-- ── BODY ROW ── -->
+  <div class="body-row">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" [class.sidebar-hidden]="sidebarCollapsed">
+      <div class="sidebar-section-head">Visit Checklist</div>
+      <div class="ck-scroll">
+        <ng-container *ngFor="let group of checklistGroups">
+          <div class="ck-group">
+            <div class="ck-group-title">{{group}}</div>
+            <div *ngFor="let item of itemsInGroup(group)"
+              class="ck-item"
+              [class.done]="item.done"
+              [class.required]="item.req && !item.done">
+              <div class="ck-dot">{{item.done ? '✓' : ''}}</div>
+              <div class="ck-label">
+                {{item.label}}
+                <span class="ck-req-star" *ngIf="item.req && !item.done">*</span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+      <div class="sidebar-progress">
+        <div class="prog-label">
+          <span>{{completedCount}} of {{currentChecklist.length}} complete</span>
+          <span>{{progressPercent}}%</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" [style.width]="progressPercent+'%'"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main">
+      <!-- Tab Nav -->
+      <div class="tab-nav" [ngClass]="'tab-nav-'+accentColor">
+        <div *ngFor="let tab of tabsForScreen"
+          class="tnav"
+          [class.active]="isTabActive(tab.id)"
+          [ngClass]="isTabActive(tab.id) ? accentColor : ''"
+          (click)="switchTab(tab.id)">
+          {{tab.label}}
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════
+           FIRST VISIT TABS
+      ════════════════════════════════════════════ -->
+      <ng-container *ngIf="currentScreen==='firstvisit'">
+
+        <!-- TAB: HISTORY -->
+        <div class="tab-pane" [class.active]="activeTab==='hist'">
+          <div class="pane-scroll">
+
+            <!-- Registration -->
+            <div class="sec" id="sec-regn">
+              <div class="sec-head" (click)="toggleSection('regn')">
+                <div class="sec-ico" style="background:rgba(61,82,160,.1)">🏥</div>
+                <div>
+                  <div class="sec-title">Patient Registration & Administrative Details</div>
+                  <div class="sec-subtitle">UHID assignment, demographics, caregiver, insurance</div>
+                </div>
+                <span class="chip chip-green" style="margin-left:auto;flex-shrink:0">Registered</span>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('regn')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('regn')">
+                <div class="fgrid fg-3">
+                  <div class="fgroup">
+                    <label class="flabel req">UHID</label>
+                    <div class="row" style="gap:6px">
+                      <input pInputText [(ngModel)]="fvForm.uhid" name="uhid" class="p-inputtext-sm" style="flex:1" required>
+                      <button pButton label="Assign" class="p-button-outlined p-button-sm" (click)="assignUHID()"></button>
+                    </div>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel req">Registration Date</label>
+                    <div class="row" style="gap:6px">
+                      <p-calendar [(ngModel)]="fvForm.regDate" name="regDate" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full" [required]="true"></p-calendar>
+                      <input pInputText type="time" [(ngModel)]="fvForm.regTime" name="regTime" style="width:90px" class="p-inputtext-sm">
+                    </div>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Registration Type</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.regType==='New OPD'" [class.indigo]="fvForm.regType==='New OPD'" (click)="fvForm.regType='New OPD'">New OPD</div>
+                      <div class="rtg-opt" [class.active]="fvForm.regType==='Transfer'" (click)="fvForm.regType='Transfer'">Transfer</div>
+                      <div class="rtg-opt" [class.active]="fvForm.regType==='Emergency'" [class.amber]="fvForm.regType==='Emergency'" (click)="fvForm.regType='Emergency'">Emergency</div>
+                    </div>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel req">Full Name</label>
+                    <input pInputText [(ngModel)]="fvForm.fullName" name="fullName" required class="p-inputtext-sm w-full" #fullNameField="ngModel">
+                    <small class="p-error" *ngIf="fullNameField.invalid && fullNameField.touched">Full name is required</small>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel req">Date of Birth</label>
+                    <p-calendar [(ngModel)]="fvForm.dob" name="dob" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full" [required]="true"></p-calendar>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel req">Sex at Birth</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.sex==='Male'" [class.indigo]="fvForm.sex==='Male'" (click)="fvForm.sex='Male'">Male</div>
+                      <div class="rtg-opt" [class.active]="fvForm.sex==='Female'" (click)="fvForm.sex='Female'">Female</div>
+                      <div class="rtg-opt" [class.active]="fvForm.sex==='Other'" (click)="fvForm.sex='Other'">Other</div>
+                    </div>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel req">Contact Number</label>
+                    <input pInputText [(ngModel)]="fvForm.contact" name="contact" required pattern="^\+?[0-9\s\-]{8,15}$" placeholder="+91 XXXXX XXXXX" class="p-inputtext-sm w-full" #contactField="ngModel">
+                    <small class="p-error" *ngIf="contactField.invalid && contactField.touched">Valid phone number required</small>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Email</label>
+                    <input pInputText type="email" [(ngModel)]="fvForm.email" name="email" placeholder="optional" class="p-inputtext-sm w-full" #emailField="ngModel">
+                    <small class="p-error" *ngIf="emailField.invalid && emailField.touched">Valid email required</small>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Occupation</label>
+                    <input pInputText [(ngModel)]="fvForm.occupation" name="occupation" class="p-inputtext-sm w-full">
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Save Registration" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-regn');showToast('Registration saved')"></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chief Complaint -->
+            <div class="sec" id="sec-cc">
+              <div class="sec-head" (click)="toggleSection('cc')">
+                <div class="sec-ico" style="background:rgba(61,82,160,.08)">🩺</div>
+                <div>
+                  <div class="sec-title">Chief Complaint <span class="req-star">*</span></div>
+                  <div class="sec-subtitle">Primary presenting symptom and duration</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('cc')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('cc')">
+                <div class="fgrid fg-2">
+                  <div class="fgroup">
+                    <label class="flabel req">Chief Complaint</label>
+                    <input pInputText [(ngModel)]="fvForm.chiefComplaint" name="chiefComplaint" required class="p-inputtext-sm w-full" #ccField="ngModel">
+                    <small class="p-error" *ngIf="ccField.invalid && ccField.touched">Chief complaint is required</small>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel req">Duration</label>
+                    <input pInputText [(ngModel)]="fvForm.ccDuration" name="ccDuration" required class="p-inputtext-sm w-full" #durationField="ngModel">
+                    <small class="p-error" *ngIf="durationField.invalid && durationField.touched">Duration is required</small>
+                  </div>
+                </div>
+                <div class="fgrid fg-4">
+                  <div class="fgroup">
+                    <label class="flabel">Onset</label>
+                    <p-dropdown [options]="onsetOptions" [(ngModel)]="fvForm.onset" name="onset" optionLabel="label" optionValue="value" styleClass="w-full"></p-dropdown>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Progression</label>
+                    <p-dropdown [options]="progressionOptions" [(ngModel)]="fvForm.progression" name="progression" optionLabel="label" optionValue="value" styleClass="w-full"></p-dropdown>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Weight Loss</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.weightLoss==='Yes — ~5 kg'" [class.amber]="fvForm.weightLoss==='Yes — ~5 kg'" (click)="fvForm.weightLoss='Yes — ~5 kg'">Yes ~5 kg</div>
+                      <div class="rtg-opt" [class.active]="fvForm.weightLoss==='No'" [class.green]="fvForm.weightLoss==='No'" (click)="fvForm.weightLoss='No'">No</div>
+                    </div>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Appetite</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.appetite==='Reduced'" [class.amber]="fvForm.appetite==='Reduced'" (click)="fvForm.appetite='Reduced'">Reduced</div>
+                      <div class="rtg-opt" [class.active]="fvForm.appetite==='Normal'" [class.green]="fvForm.appetite==='Normal'" (click)="fvForm.appetite='Normal'">Normal</div>
+                      <div class="rtg-opt" [class.active]="fvForm.appetite==='Absent'" [class.red]="fvForm.appetite==='Absent'" (click)="fvForm.appetite='Absent'">Absent</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Save CC" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-cc');showToast('CC saved')"></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- HPI -->
+            <div class="sec" id="sec-hpi">
+              <div class="sec-head" (click)="toggleSection('hpi')">
+                <div class="sec-ico" style="background:rgba(61,82,160,.08)">📝</div>
+                <div><div class="sec-title">History of Present Illness <span class="req-star">*</span></div></div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('hpi')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('hpi')">
+                <div class="fgroup">
+                  <label class="flabel req">Detailed HPI</label>
+                  <textarea pInputTextarea [(ngModel)]="fvForm.hpiText" name="hpiText" [rows]="5" required class="w-full" #hpiField="ngModel"></textarea>
+                  <small class="p-error" *ngIf="hpiField.invalid && hpiField.touched">HPI is required</small>
+                </div>
+                <div class="fgrid fg-3">
+                  <div class="fgroup">
+                    <label class="flabel">Rectal Bleeding</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.rectalBleeding==='Present'" [class.indigo]="fvForm.rectalBleeding==='Present'" (click)="fvForm.rectalBleeding='Present'">Present</div>
+                      <div class="rtg-opt" [class.active]="fvForm.rectalBleeding==='Absent'" [class.green]="fvForm.rectalBleeding==='Absent'" (click)="fvForm.rectalBleeding='Absent'">Absent</div>
+                    </div>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Abdominal Pain</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.abdominalPain==='Present'" [class.amber]="fvForm.abdominalPain==='Present'" (click)="fvForm.abdominalPain='Present'">Present</div>
+                      <div class="rtg-opt" [class.active]="fvForm.abdominalPain==='Absent'" [class.green]="fvForm.abdominalPain==='Absent'" (click)="fvForm.abdominalPain='Absent'">Absent</div>
+                    </div>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Urgency / Tenesmus</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.urgencyTenesmus==='Present'" [class.amber]="fvForm.urgencyTenesmus==='Present'" (click)="fvForm.urgencyTenesmus='Present'">Present</div>
+                      <div class="rtg-opt" [class.active]="fvForm.urgencyTenesmus==='Absent'" [class.green]="fvForm.urgencyTenesmus==='Absent'" (click)="fvForm.urgencyTenesmus='Absent'">Absent</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Save HPI" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-hx');showToast('HPI saved')"></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- PMHx -->
+            <div class="sec" id="sec-pmhx">
+              <div class="sec-head" (click)="toggleSection('pmhx')">
+                <div class="sec-ico" style="background:rgba(180,83,9,.07)">🏥</div>
+                <div><div class="sec-title">Past Medical, Surgical & Social History <span class="req-star">*</span></div></div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('pmhx')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('pmhx')">
+                <div class="fgrid fg-3">
+                  <div class="fgroup"><label class="flabel">Diabetes Mellitus</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.diabetes==='Yes — T2DM'" [class.amber]="fvForm.diabetes==='Yes — T2DM'" (click)="fvForm.diabetes='Yes — T2DM'">Yes — T2DM</div>
+                      <div class="rtg-opt" [class.active]="fvForm.diabetes==='No'" [class.green]="fvForm.diabetes==='No'" (click)="fvForm.diabetes='No'">No</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Hypertension</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.hypertension==='Yes — on Rx'" [class.amber]="fvForm.hypertension==='Yes — on Rx'" (click)="fvForm.hypertension='Yes — on Rx'">Yes — on Rx</div>
+                      <div class="rtg-opt" [class.active]="fvForm.hypertension==='No'" [class.green]="fvForm.hypertension==='No'" (click)="fvForm.hypertension='No'">No</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">CAD / Heart Disease</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.cad==='No'" [class.green]="fvForm.cad==='No'" (click)="fvForm.cad='No'">No</div>
+                      <div class="rtg-opt" [class.active]="fvForm.cad==='Yes'" [class.amber]="fvForm.cad==='Yes'" (click)="fvForm.cad='Yes'">Yes</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Prior Malignancy</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.priorMalignancy==='No'" [class.green]="fvForm.priorMalignancy==='No'" (click)="fvForm.priorMalignancy='No'">No</div>
+                      <div class="rtg-opt" [class.active]="fvForm.priorMalignancy==='Yes'" [class.red]="fvForm.priorMalignancy==='Yes'" (click)="fvForm.priorMalignancy='Yes'">Yes</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Prior Chemo / RT</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.priorChemoRT==='No'" [class.green]="fvForm.priorChemoRT==='No'" (click)="fvForm.priorChemoRT='No'">No</div>
+                      <div class="rtg-opt" [class.active]="fvForm.priorChemoRT==='Yes'" [class.amber]="fvForm.priorChemoRT==='Yes'" (click)="fvForm.priorChemoRT='Yes'">Yes</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Prior Surgery</label>
+                    <input pInputText [(ngModel)]="fvForm.priorSurgery" name="priorSurgery" class="p-inputtext-sm w-full">
+                  </div>
+                </div>
+                <div class="fgrid fg-2">
+                  <div class="fgroup"><label class="flabel req">Current Medications</label>
+                    <textarea pInputTextarea [(ngModel)]="fvForm.currentMeds" name="currentMeds" [rows]="2" required class="w-full" #medsField="ngModel"></textarea>
+                    <small class="p-error" *ngIf="medsField.invalid && medsField.touched">Required</small>
+                  </div>
+                  <div class="fgroup"><label class="flabel req">Known Drug Allergies</label>
+                    <div class="rtg" style="margin-bottom:6px">
+                      <div class="rtg-opt" [class.active]="fvForm.allergies==='NKDA'" [class.green]="fvForm.allergies==='NKDA'" (click)="fvForm.allergies='NKDA'">NKDA</div>
+                      <div class="rtg-opt" [class.active]="fvForm.allergies==='Known allergy'" [class.red]="fvForm.allergies==='Known allergy'" (click)="fvForm.allergies='Known allergy'">Known Allergy</div>
+                    </div>
+                    <label class="flabel" style="margin-top:4px">Smoking / Alcohol / Substance</label>
+                    <input pInputText [(ngModel)]="fvForm.smokingAlcohol" name="smokingAlcohol" class="p-inputtext-sm w-full">
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Save PMHx" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-pmhx');showToast('PMHx saved')"></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Family History -->
+            <div class="sec" id="sec-fhx">
+              <div class="sec-head" (click)="toggleSection('fhx')">
+                <div class="sec-ico" style="background:rgba(109,40,217,.07)">👨‍👩‍👦</div>
+                <div><div class="sec-title">Family History</div></div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('fhx')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('fhx')">
+                <div class="fgrid fg-3">
+                  <div class="fgroup"><label class="flabel">Family History of Cancer</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.familyHxCancer==='Yes'" [class.amber]="fvForm.familyHxCancer==='Yes'" (click)="fvForm.familyHxCancer='Yes'">Yes</div>
+                      <div class="rtg-opt" [class.active]="fvForm.familyHxCancer==='No'" [class.green]="fvForm.familyHxCancer==='No'" (click)="fvForm.familyHxCancer='No'">No</div>
+                      <div class="rtg-opt" [class.active]="fvForm.familyHxCancer==='Unknown'" (click)="fvForm.familyHxCancer='Unknown'">Unknown</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Relative & Cancer Type</label>
+                    <input pInputText [(ngModel)]="fvForm.familyRelativeCancer" name="familyRelativeCancer" class="p-inputtext-sm w-full">
+                  </div>
+                  <div class="fgroup"><label class="flabel">Lynch Syndrome / HNPCC Screen</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="fvForm.lynchScreen==='Planned'" [class.indigo]="fvForm.lynchScreen==='Planned'" (click)="fvForm.lynchScreen='Planned'">Planned</div>
+                      <div class="rtg-opt" [class.active]="fvForm.lynchScreen==='Done — negative'" [class.green]="fvForm.lynchScreen==='Done — negative'" (click)="fvForm.lynchScreen='Done — negative'">Done — negative</div>
+                      <div class="rtg-opt" [class.active]="fvForm.lynchScreen==='Positive'" [class.red]="fvForm.lynchScreen==='Positive'" (click)="fvForm.lynchScreen='Positive'">Positive</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Save FHx" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-fhx');showToast('FHx saved')"></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Review of Systems -->
+            <div class="sec" id="sec-ros">
+              <div class="sec-head" (click)="toggleSection('ros')">
+                <div class="sec-ico" style="background:rgba(26,127,90,.07)">🔎</div>
+                <div>
+                  <div class="sec-title">Review of Systems</div>
+                  <div class="sec-subtitle">10-system screening</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('ros')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('ros')">
+                <div class="ros-grid">
+                  <div *ngFor="let item of reviewSystems" class="ros-card" [ngClass]="'ros-'+item.flag">
+                    <div class="ros-sys" [ngClass]="'ros-sys-'+item.flag">{{item.sys}}</div>
+                    <div class="ros-sx">{{item.sx}}</div>
+                    <div class="rtg" style="margin-top:5px">
+                      <div class="rtg-opt" style="font-size:9px" [class.active]="item.value==='Normal'" [class.green]="item.value==='Normal'" (click)="setReviewSystem(item,'Normal')">Normal</div>
+                      <div class="rtg-opt" style="font-size:9px" [class.active]="item.value==='Abnormal'" [class.amber]="item.value==='Abnormal'" (click)="setReviewSystem(item,'Abnormal')">Abnormal</div>
+                      <div class="rtg-opt" style="font-size:9px" [class.active]="item.value==='Significant'" [class.red]="item.value==='Significant'" (click)="setReviewSystem(item,'Significant')">Significant</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div class="action-bar">
+            <span class="text-muted text-sm">First Visit — History</span>
+            <div class="spacer"></div>
+            <button pButton label="Examination →" class="p-button-ghost p-button-sm" (click)="switchTab('exam')"></button>
+            <button pButton label="Investigations →" class="p-button-sm" (click)="switchTab('inv')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: EXAMINATION -->
+        <div class="tab-pane" [class.active]="activeTab==='exam'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-pe">
+              <div class="sec-head" (click)="toggleSection('pe')">
+                <div class="sec-ico" style="background:rgba(26,127,90,.08)">🩺</div>
+                <div><div class="sec-title">Physical Examination & Vitals <span class="req-star">*</span></div></div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('pe')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('pe')">
+                <div class="stats-strip">
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">Weight</div>
+                    <input pInputText type="number" [(ngModel)]="fvForm.weight" name="fvWeight" step="0.1" class="stat-input mono" required>
+                    <div class="stat-cell-sub">kg</div>
+                  </div>
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">Height</div>
+                    <input pInputText type="number" [(ngModel)]="fvForm.height" name="fvHeight" class="stat-input mono" required>
+                    <div class="stat-cell-sub">cm</div>
+                  </div>
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">BP</div>
+                    <input pInputText [(ngModel)]="fvForm.bp" name="fvBP" class="stat-input mono" style="color:var(--amber)">
+                    <div class="stat-cell-sub">mmHg</div>
+                  </div>
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">Pulse</div>
+                    <input pInputText type="number" [(ngModel)]="fvForm.pulse" name="fvPulse" class="stat-input mono" style="color:var(--green)">
+                    <div class="stat-cell-sub">bpm</div>
+                  </div>
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">SpO₂</div>
+                    <input pInputText type="number" [(ngModel)]="fvForm.spo2" name="fvSpo2" class="stat-input mono" style="color:var(--green)">
+                    <div class="stat-cell-sub">%</div>
+                  </div>
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">Temp</div>
+                    <input pInputText type="number" [(ngModel)]="fvForm.temp" name="fvTemp" step="0.1" class="stat-input mono" style="color:var(--green)">
+                    <div class="stat-cell-sub">°F</div>
+                  </div>
+                </div>
+                <div class="fgrid fg-4" style="margin-top:12px">
+                  <div class="fgroup">
+                    <label class="flabel req">ECOG Performance Status</label>
+                    <p-dropdown [options]="ecogOptions" [(ngModel)]="fvForm.ecog" name="fvEcog" optionLabel="label" optionValue="value" styleClass="w-full" (onChange)="markDone('ck-ecog')"></p-dropdown>
+                  </div>
+                  <div class="fgroup" style="grid-column:span 3">
+                    <label class="flabel req">General Examination</label>
+                    <textarea pInputTextarea [(ngModel)]="fvForm.generalExam" name="fvGeneralExam" [rows]="2" required class="w-full"></textarea>
+                  </div>
+                </div>
+                <div class="fgrid fg-2">
+                  <div class="fgroup">
+                    <label class="flabel">Abdomen Examination</label>
+                    <textarea pInputTextarea [(ngModel)]="fvForm.abdomenExam" name="fvAbdomen" [rows]="3" class="w-full"></textarea>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Digital Rectal Examination (DRE)</label>
+                    <textarea pInputTextarea [(ngModel)]="fvForm.dre" name="fvDre" [rows]="3" class="w-full"></textarea>
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Save Examination" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-pe');markDone('ck-sys');showToast('Examination saved')"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← History" class="p-button-ghost p-button-sm" (click)="switchTab('hist')"></button>
+            <div class="spacer"></div>
+            <button pButton label="Investigations →" class="p-button-sm" (click)="switchTab('inv')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: INVESTIGATIONS -->
+        <div class="tab-pane" [class.active]="activeTab==='inv'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-inv">
+              <div class="sec-head" (click)="toggleSection('inv')">
+                <div class="sec-ico" style="background:rgba(14,116,144,.08)">🔬</div>
+                <div>
+                  <div class="sec-title">Investigations Ordered <span class="req-star">*</span></div>
+                  <div class="sec-subtitle">Labs, imaging, histology, and other workup ordered today</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('inv')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('inv')">
+                <div class="fgroup">
+                  <label class="flabel req">Investigations List</label>
+                  <textarea pInputTextarea [(ngModel)]="fvForm.investigationsOrdered" name="investigations" [rows]="5" required class="w-full" #invField="ngModel"></textarea>
+                  <small class="p-error" *ngIf="invField.invalid && invField.touched">Please document investigations ordered</small>
+                </div>
+                <div class="fgrid fg-2">
+                  <div class="fgroup">
+                    <label class="flabel req">Provisional Diagnosis</label>
+                    <input pInputText [(ngModel)]="fvForm.provisionalDx" name="provisionalDx" required class="p-inputtext-sm w-full" #provDxField="ngModel">
+                    <small class="p-error" *ngIf="provDxField.invalid && provDxField.touched">Required</small>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">ICD-10 Code</label>
+                    <input pInputText [(ngModel)]="fvForm.icd10Code" name="icd10Code" class="p-inputtext-sm w-full mono">
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Save Investigations" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-inv');markDone('ck-prov');showToast('Investigations saved')"></button>
+                </div>
+              </div>
+            </div>
+            <div class="sec" id="sec-counsel">
+              <div class="sec-head" (click)="toggleSection('counsel')">
+                <div class="sec-ico" style="background:rgba(61,82,160,.07)">💬</div>
+                <div><div class="sec-title">Counselling & Follow-up</div></div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('counsel')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('counsel')">
+                <div class="fgroup">
+                  <label class="flabel">Counselling Note</label>
+                  <textarea pInputTextarea [(ngModel)]="fvForm.counsellingNote" name="counsellingNote" [rows]="3" class="w-full"></textarea>
+                </div>
+                <div class="fgrid fg-2">
+                  <div class="fgroup">
+                    <label class="flabel req">Follow-up Date</label>
+                    <p-calendar [(ngModel)]="fvForm.followUpDate" name="followUpDate" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full" [required]="true" (onSelect)="markDone('ck-fu')"></p-calendar>
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Save Counselling" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-counsel');markDone('ck-fu');showToast('Counselling documented')"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Examination" class="p-button-ghost p-button-sm" (click)="switchTab('exam')"></button>
+            <div class="spacer"></div>
+            <button pButton label="Clinical Note →" class="p-button-sm" (click)="switchTab('note')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: CLINICAL NOTE / SIGN-OFF -->
+        <div class="tab-pane" [class.active]="activeTab==='note'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-soap">
+              <div class="sec-head" (click)="toggleSection('soap')">
+                <div class="sec-ico" style="background:rgba(61,82,160,.07)">✍️</div>
+                <div>
+                  <div class="sec-title">Clinical Note / SOAP Summary</div>
+                  <div class="sec-subtitle">Auto-generated draft from form data — edit before finalising</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('soap')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('soap')">
+                <div class="alert-box alert-info" style="margin-bottom:12px">
+                  <span class="alert-ico">ℹ️</span>
+                  <div class="alert-body"><div class="alert-title">Review and sign the clinical note below before finalising this visit.</div></div>
+                </div>
+                <div class="fgroup">
+                  <label class="flabel">Subjective</label>
+                  <textarea pInputTextarea [ngModel]="fvForm.chiefComplaint+'. '+fvForm.hpiText" name="soapS" [rows]="3" class="w-full" readonly></textarea>
+                </div>
+                <div class="fgroup">
+                  <label class="flabel">Objective (Vitals & Examination)</label>
+                  <textarea pInputTextarea [value]="'Wt: '+fvForm.weight+'kg | BP: '+fvForm.bp+' | Pulse: '+fvForm.pulse+' bpm | SpO2: '+fvForm.spo2+'% | Temp: '+fvForm.temp+'°F\nECOG PS: '+fvForm.ecog+'\n'+fvForm.generalExam" name="soapO" [rows]="3" class="w-full" readonly></textarea>
+                </div>
+                <div class="fgroup">
+                  <label class="flabel req">Assessment</label>
+                  <textarea pInputTextarea [(ngModel)]="fvForm.provisionalDx" name="soapA" [rows]="2" required class="w-full"></textarea>
+                </div>
+                <div class="fgroup">
+                  <label class="flabel req">Plan</label>
+                  <textarea pInputTextarea [(ngModel)]="fvForm.investigationsOrdered" name="soapP" [rows]="4" required class="w-full"></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="sec" id="sec-signoff">
+              <div class="sec-head" (click)="toggleSection('signoff')">
+                <div class="sec-ico" style="background:rgba(61,82,160,.07)">✍️</div>
+                <div>
+                  <div class="sec-title">Physician Sign-off <span class="req-star">*</span></div>
+                  <div class="sec-subtitle">Consulting oncologist signature required before finalising</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('signoff')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('signoff')">
+                <div class="sig-grid" style="grid-template-columns:1fr">
+                  <div class="sig-card" [class.signed]="fvForm.sigOncologist">
+                    <div class="sig-role">🩺 Consulting Oncologist</div>
+                    <div class="sig-name">Dr. Priya Nair, DM Medical Oncology</div>
+                    <div class="sig-time mono">{{fvForm.sigOncologist ? fvForm.sigOncologistTime : 'Pending'}}</div>
+                    <!-- <button class="sig-btn" [class.signed-btn]="fvForm.sigOncologist"
+                      [disabled]="fvForm.sigOncologist"
+                      (click)="signRole('ro', {roSigned:false,mpSigned:false,rttSigned:false}); fvForm.sigOncologist=true; fvForm.sigOncologistTime=getCurrentTime(); markDone('ck-sig-fv')">
+                      {{fvForm.sigOncologist ? '✓ Signed' : 'Sign & Finalise Note'}}
+                    </button> -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Investigations" class="p-button-ghost p-button-sm" (click)="switchTab('inv')"></button>
+            <div class="spacer"></div>
+            <button pButton label="✅ Finalise Visit" class="p-button-sm" (click)="finalise()"></button>
+          </div>
+        </div>
+
+      </ng-container>
+
+      <!-- ════════════════════════════════════════════
+           CHEMO TABS
+      ════════════════════════════════════════════ -->
+      <ng-container *ngIf="currentScreen==='chemo'">
+
+        <!-- TAB: CONSULTATION -->
+        <div class="tab-pane" [class.active]="activeTab==='consult'">
+          <div class="pane-scroll">
+            <!-- Toxicity Review -->
+            <div class="sec" id="sec-tox">
+              <div class="sec-head" (click)="toggleSection('tox')">
+                <div class="sec-ico" style="background:rgba(192,57,43,.07)">⚠️</div>
+                <div>
+                  <div class="sec-title">Prior Cycle Toxicities <span class="req-star">*</span></div>
+                  <div class="sec-subtitle">CTCAE Grade adverse events from last cycle</div>
+                </div>
+                <span class="chip chip-red">2 Grade ≥ 2</span>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('tox')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('tox')">
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead><tr><th>Toxicity</th><th>Grade</th><th>Attribution</th><th>Action Taken</th><th>Notes</th><th></th></tr></thead>
+                    <tbody>
+                      <tr *ngFor="let row of chemoForm.toxRows; let i = index">
+                        <td><input pInputText [(ngModel)]="row.toxicity" [name]="'tox-name-'+i" class="p-inputtext-sm w-full"></td>
+                        <td><p-dropdown [options]="gradeOptions" [(ngModel)]="row.grade" [name]="'tox-grade-'+i" optionLabel="label" optionValue="value" styleClass="w-auto"></p-dropdown></td>
+                        <td><p-dropdown [options]="attributionOptions" [(ngModel)]="row.attribution" [name]="'tox-attr-'+i" optionLabel="label" optionValue="value" styleClass="w-auto"></p-dropdown></td>
+                        <td><input pInputText [(ngModel)]="row.action" [name]="'tox-action-'+i" class="p-inputtext-sm w-full"></td>
+                        <td><input pInputText [(ngModel)]="row.notes" [name]="'tox-notes-'+i" class="p-inputtext-sm w-full"></td>
+                        <td><button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm" (click)="removeToxRow(i)"></button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="row" style="margin-top:8px;gap:8px">
+                  <button pButton label="+ Add Row" class="p-button-ghost p-button-sm" (click)="addToxRow()"></button>
+                  <div class="spacer"></div>
+                  <button pButton label="✓ Toxicities Reviewed" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-tox');showToast('Toxicities reviewed')"></button>
+                </div>
+              </div>
+            </div>
+            <!-- Labs -->
+            <div class="sec" id="sec-labs">
+              <div class="sec-head" (click)="toggleSection('labs')">
+                <div class="sec-ico" style="background:rgba(14,116,144,.07)">🧪</div>
+                <div>
+                  <div class="sec-title">Pre-Cycle Labs <span class="req-star">*</span></div>
+                  <div class="sec-subtitle">CBC, LFT, RFT — must be &lt;48 hours old</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('labs')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('labs')">
+                <div class="inv-grid">
+                  <div class="inv-card" [ngClass]="chemoForm.hb<10?'abnormal':chemoForm.hb<11?'borderline':'normal'">
+                    <div class="inv-name">Hb</div>
+                    <div class="inv-value"><input pInputText type="number" [(ngModel)]="chemoForm.hb" name="labHb" class="inv-input mono" step="0.1"></div>
+                    <div class="inv-ref">Ref: 12–16 g/dL</div>
+                    <div class="inv-flag" [ngClass]="chemoForm.hb<10?'high':'normal'">{{chemoForm.hb<10?'↓ LOW':chemoForm.hb<11?'↓ BORDERLINE':'✓ OK'}}</div>
+                  </div>
+                  <div class="inv-card" [ngClass]="chemoForm.wbc<3?'abnormal':chemoForm.wbc<4?'borderline':'normal'">
+                    <div class="inv-name">WBC</div>
+                    <div class="inv-value"><input pInputText type="number" [(ngModel)]="chemoForm.wbc" name="labWbc" class="inv-input mono" step="0.1"></div>
+                    <div class="inv-ref">Ref: 4–11 ×10³</div>
+                    <div class="inv-flag" [ngClass]="chemoForm.wbc<3?'high':'normal'">{{chemoForm.wbc<3?'↓ LOW':'✓ OK'}}</div>
+                  </div>
+                  <div class="inv-card normal">
+                    <div class="inv-name">Platelets</div>
+                    <div class="inv-value"><input pInputText type="number" [(ngModel)]="chemoForm.plt" name="labPlt" class="inv-input mono"></div>
+                    <div class="inv-ref">Ref: 150–400 ×10³</div>
+                    <div class="inv-flag normal">✓ OK</div>
+                  </div>
+                  <div class="inv-card" [ngClass]="chemoForm.anc<1.5?'abnormal':'normal'">
+                    <div class="inv-name">ANC</div>
+                    <div class="inv-value"><input pInputText type="number" [(ngModel)]="chemoForm.anc" name="labAnc" class="inv-input mono" step="0.1"></div>
+                    <div class="inv-ref">Ref: ≥1.5 ×10³</div>
+                    <div class="inv-flag" [ngClass]="chemoForm.anc<1.5?'high':'normal'">{{chemoForm.anc<1.5?'↓ LOW':'✓ OK'}}</div>
+                  </div>
+                  <div class="inv-card normal">
+                    <div class="inv-name">Creatinine</div>
+                    <div class="inv-value"><input pInputText type="number" [(ngModel)]="chemoForm.creatinine" name="labCr" class="inv-input mono" step="0.1"></div>
+                    <div class="inv-ref">Ref: 0.6–1.2 mg/dL</div>
+                    <div class="inv-flag normal">✓ OK</div>
+                  </div>
+                  <div class="inv-card normal">
+                    <div class="inv-name">Bilirubin</div>
+                    <div class="inv-value"><input pInputText type="number" [(ngModel)]="chemoForm.bilirubin" name="labBili" class="inv-input mono" step="0.1"></div>
+                    <div class="inv-ref">Ref: &lt;1.2 mg/dL</div>
+                    <div class="inv-flag normal">✓ OK</div>
+                  </div>
+                </div>
+                <div class="row justify-end" style="margin-top:8px">
+                  <button pButton label="✓ Labs Reviewed" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-labs');showToast('Labs reviewed')"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <span class="text-muted text-sm">Chemo — Consultation</span>
+            <div class="spacer"></div>
+            <button pButton label="Dose & Protocol →" class="p-button-sm amber-btn" (click)="switchTab('dose')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: DOSE & PROTOCOL -->
+        <div class="tab-pane" [class.active]="activeTab==='dose'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-bsa">
+              <div class="sec-head" (click)="toggleSection('bsa')">
+                <div class="sec-ico" style="background:rgba(180,83,9,.08)">⚖️</div>
+                <div>
+                  <div class="sec-title">BSA & Weight <span class="req-star">*</span></div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('bsa')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('bsa')">
+                <div class="fgrid fg-4">
+                  <div class="fgroup">
+                    <label class="flabel req">Weight (kg)</label>
+                    <input pInputText type="number" [(ngModel)]="chemoForm.weight" name="chemoWt" required step="0.1" class="p-inputtext-sm w-full mono" (input)="calcBSA()">
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel req">Height (cm)</label>
+                    <input pInputText type="number" [(ngModel)]="chemoForm.height" name="chemoHt" required class="p-inputtext-sm w-full mono" (input)="calcBSA()">
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Calculated BSA (Mosteller)</label>
+                    <div class="bsa-result">{{chemoForm.bsaCalc}} m²</div>
+                  </div>
+                </div>
+                <div class="alert-box alert-info" style="margin-top:8px">
+                  <span class="alert-ico">💊</span>
+                  <div class="alert-body"><div class="alert-title">FOLFOX-6 Doses for BSA {{chemoForm.bsaCalc}} m²</div></div>
+                </div>
+                <div class="fgrid fg-4" style="margin-top:8px">
+                  <div class="fgroup"><label class="flabel">Oxaliplatin 85 mg/m²</label><div class="dose-val mono">{{chemoForm.oxa}} mg</div></div>
+                  <div class="fgroup"><label class="flabel">Leucovorin 400 mg/m²</label><div class="dose-val mono">{{chemoForm.lv}} mg</div></div>
+                  <div class="fgroup"><label class="flabel">5-FU Bolus 400 mg/m²</label><div class="dose-val mono">{{chemoForm.fub}} mg</div></div>
+                  <div class="fgroup"><label class="flabel">5-FU Infusion 2400 mg/m²</label><div class="dose-val mono">{{chemoForm.fuInf}} mg</div></div>
+                </div>
+                <div class="fgrid fg-2" style="margin-top:8px">
+                  <div class="fgroup">
+                    <label class="flabel">Cycle Decision <span class="req-star">*</span></label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="chemoForm.cycleDecision==='Proceed'" [class.green]="chemoForm.cycleDecision==='Proceed'" (click)="chemoForm.cycleDecision='Proceed';markDone('ck-decision')">Proceed</div>
+                      <div class="rtg-opt" [class.active]="chemoForm.cycleDecision==='Modify'" [class.amber]="chemoForm.cycleDecision==='Modify'" (click)="chemoForm.cycleDecision='Modify';markDone('ck-decision')">Modify</div>
+                      <div class="rtg-opt" [class.active]="chemoForm.cycleDecision==='Delay'" [class.amber]="chemoForm.cycleDecision==='Delay'" (click)="chemoForm.cycleDecision='Delay';markDone('ck-decision')">Delay</div>
+                      <div class="rtg-opt" [class.active]="chemoForm.cycleDecision==='Stop'" [class.red]="chemoForm.cycleDecision==='Stop'" (click)="chemoForm.cycleDecision='Stop';markDone('ck-decision')">Stop</div>
+                    </div>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Dose Modification Reason</label>
+                    <input pInputText [(ngModel)]="chemoForm.doseModification" name="doseModification" class="p-inputtext-sm w-full">
+                  </div>
+                </div>
+                <div class="row justify-end" style="margin-top:8px">
+                  <button pButton label="✓ Dose Sheet Confirmed" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-dose');showToast('Dose sheet confirmed')"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Consultation" class="p-button-ghost p-button-sm" (click)="switchTab('consult')"></button>
+            <div class="spacer"></div>
+            <button pButton label="Discharge Advice →" class="p-button-sm amber-btn" (click)="switchTab('disc')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: LABS (placeholder) -->
+        <div class="tab-pane" [class.active]="activeTab==='labs'">
+          <div class="pane-scroll">
+            <div class="sec"><div class="sec-body"><div class="text-muted">Lab trends chart — see Consultation tab for pre-cycle lab values.</div></div></div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Dose" class="p-button-ghost p-button-sm" (click)="switchTab('dose')"></button>
+            <div class="spacer"></div>
+            <button pButton label="Discharge Advice →" class="p-button-sm amber-btn" (click)="switchTab('disc')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: DISCHARGE ADVICE -->
+        <div class="tab-pane" [class.active]="activeTab==='disc'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-disc">
+              <div class="sec-head" (click)="toggleSection('disc')">
+                <div class="sec-ico" style="background:rgba(26,127,90,.07)">💬</div>
+                <div><div class="sec-title">Discharge & Take-Home Advice <span class="req-star">*</span></div></div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('disc')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('disc')">
+                <div class="fgrid fg-2">
+                  <div class="fgroup">
+                    <label class="flabel req">Advice Given</label>
+                    <textarea pInputTextarea [(ngModel)]="chemoForm.dischargeAdvice" name="discAdvice" [rows]="6" required class="w-full" #discField="ngModel"></textarea>
+                    <small class="p-error" *ngIf="discField.invalid && discField.touched">Required</small>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Next Cycle Date</label>
+                    <p-calendar [(ngModel)]="chemoForm.nextCycleDate" name="nextCycleDate" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full"></p-calendar>
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Discharge Advice Documented" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-disc');showToast('Discharge advice saved')"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Dose" class="p-button-ghost p-button-sm" (click)="switchTab('dose')"></button>
+            <div class="spacer"></div>
+            <button pButton label="Signatures →" class="p-button-sm amber-btn" (click)="switchTab('sig')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: SIGNATURES -->
+        <div class="tab-pane" [class.active]="activeTab==='sig'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-sig">
+              <div class="sec-head" (click)="toggleSection('chemoSig')">
+                <div class="sec-ico" style="background:rgba(61,82,160,.07)">✍️</div>
+                <div>
+                  <div class="sec-title">RO + MP + RTT — Mandatory Sign-off <span class="req-star">*</span></div>
+                  <div class="sec-subtitle">All three required before cycle is recorded as complete</div>
+                </div>
+                <span class="chip chip-red">All 3 required</span>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('chemoSig')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('chemoSig')">
+                <div class="sig-grid">
+                  <div class="sig-card" [class.signed]="chemoForm.roSigned">
+                    <div class="sig-role">☢️ Radiation Oncologist</div>
+                    <div class="sig-name">Dr. Meera Sundar</div>
+                    <div class="sig-time mono">{{chemoForm.roSigned ? chemoForm.roTime : 'Pending'}}</div>
+                    <button class="sig-btn" [class.signed-btn]="chemoForm.roSigned" [disabled]="chemoForm.roSigned"
+                      (click)="signRole('ro', chemoForm)">{{chemoForm.roSigned ? '✓ Signed' : 'Sign — Cycle Approved'}}</button>
+                  </div>
+                  <div class="sig-card" [class.signed]="chemoForm.mpSigned">
+                    <div class="sig-role">⚛️ Medical Physicist</div>
+                    <div class="sig-name">Mr. Kiran Bhat</div>
+                    <div class="sig-time mono">{{chemoForm.mpSigned ? chemoForm.mpTime : 'Pending'}}</div>
+                    <button class="sig-btn" [class.signed-btn]="chemoForm.mpSigned" [disabled]="chemoForm.mpSigned"
+                      (click)="signRole('mp', chemoForm)">{{chemoForm.mpSigned ? '✓ Signed' : 'Sign — Pharmacy Cleared'}}</button>
+                  </div>
+                  <div class="sig-card" [class.signed]="chemoForm.rttSigned">
+                    <div class="sig-role">🩻 Oncology Nurse</div>
+                    <div class="sig-name">Nurse Anita Rao</div>
+                    <div class="sig-time mono">{{chemoForm.rttSigned ? chemoForm.rttTime : 'Pending'}}</div>
+                    <button class="sig-btn" [class.signed-btn]="chemoForm.rttSigned" [disabled]="chemoForm.rttSigned"
+                      (click)="signRole('rtt', chemoForm)">{{chemoForm.rttSigned ? '✓ Signed' : 'Sign — Chemo Administered'}}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Discharge Advice" class="p-button-ghost p-button-sm" (click)="switchTab('disc')"></button>
+            <div class="spacer"></div>
+            <button pButton label="🖨️ Print Cycle Record" class="p-button-ghost p-button-sm"></button>
+            <button pButton label="✅ Finalise Cycle 3" class="p-button-sm amber-btn" (click)="finalise()"></button>
+          </div>
+        </div>
+
+      </ng-container>
+
+      <!-- ════════════════════════════════════════════
+           RT TABS
+      ════════════════════════════════════════════ -->
+      <ng-container *ngIf="currentScreen==='rt'">
+
+        <!-- TAB: FRACTION VISIT -->
+        <div class="tab-pane" [class.active]="activeTab==='fraction'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-frac">
+              <div class="sec-head" (click)="toggleSection('frac')">
+                <div class="sec-ico" style="background:rgba(14,116,144,.08)">☢️</div>
+                <div>
+                  <div class="sec-title">Fraction Verification <span class="req-star">*</span></div>
+                  <div class="sec-subtitle">CBCT, image-guided verification, patient setup</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('frac')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('frac')">
+                <div class="fgrid fg-3">
+                  <div class="fgroup"><label class="flabel">CBCT Performed</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="rtForm.cbctPerformed==='Yes'" [class.green]="rtForm.cbctPerformed==='Yes'" (click)="rtForm.cbctPerformed='Yes'">Yes</div>
+                      <div class="rtg-opt" [class.active]="rtForm.cbctPerformed==='No'" [class.amber]="rtForm.cbctPerformed==='No'" (click)="rtForm.cbctPerformed='No'">No</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Lateral Shift (mm)</label>
+                    <input pInputText [(ngModel)]="rtForm.cbctShiftLat" name="shiftLat" class="p-inputtext-sm w-full mono">
+                  </div>
+                  <div class="fgroup"><label class="flabel">Longitudinal Shift (mm)</label>
+                    <input pInputText [(ngModel)]="rtForm.cbctShiftLong" name="shiftLong" class="p-inputtext-sm w-full mono">
+                  </div>
+                  <div class="fgroup"><label class="flabel">Vertical Shift (mm)</label>
+                    <input pInputText [(ngModel)]="rtForm.cbctShiftVert" name="shiftVert" class="p-inputtext-sm w-full mono">
+                  </div>
+                  <div class="fgroup"><label class="flabel">Shifts Accepted?</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="rtForm.cbctShiftAccepted==='Yes'" [class.green]="rtForm.cbctShiftAccepted==='Yes'" (click)="rtForm.cbctShiftAccepted='Yes';markDone('ck-verif')">Yes — within tolerance</div>
+                      <div class="rtg-opt" [class.active]="rtForm.cbctShiftAccepted==='No'" [class.red]="rtForm.cbctShiftAccepted==='No'" (click)="rtForm.cbctShiftAccepted='No'">No — replanned</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="fgroup">
+                  <label class="flabel">CBCT Note</label>
+                  <textarea pInputTextarea [(ngModel)]="rtForm.cbctNote" name="cbctNote" [rows]="2" class="w-full"></textarea>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Verification Done" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-verif');markDone('ck-frac');showToast('Fraction verified')"></button>
+                </div>
+              </div>
+            </div>
+            <!-- Acute Reactions -->
+            <div class="sec" id="sec-acute">
+              <div class="sec-head" (click)="toggleSection('acute')">
+                <div class="sec-ico" style="background:rgba(192,57,43,.07)">🔴</div>
+                <div>
+                  <div class="sec-title">Acute Reactions Assessment <span class="req-star">*</span></div>
+                  <div class="sec-subtitle">RTOG / CTCAE acute toxicity at today's fraction</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('acute')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('acute')">
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead><tr><th>Reaction</th><th>Grade</th><th>Management</th><th>Treatment Gap</th></tr></thead>
+                    <tbody>
+                      <tr *ngFor="let row of rtForm.rtReactionRows; let i = index">
+                        <td><input pInputText [(ngModel)]="row.reaction" [name]="'rtr-'+i" class="p-inputtext-sm w-full"></td>
+                        <td><p-dropdown [options]="gradeOptions" [(ngModel)]="row.grade" [name]="'rtr-g-'+i" optionLabel="label" optionValue="value" styleClass="w-auto"></p-dropdown></td>
+                        <td><input pInputText [(ngModel)]="row.management" [name]="'rtr-mgmt-'+i" class="p-inputtext-sm w-full"></td>
+                        <td>
+                          <div class="rtg">
+                            <div class="rtg-opt" style="font-size:10px" [class.active]="row.treatmentGap==='No'" [class.green]="row.treatmentGap==='No'" (click)="row.treatmentGap='No'">No</div>
+                            <div class="rtg-opt" style="font-size:10px" [class.active]="row.treatmentGap==='Yes'" [class.red]="row.treatmentGap==='Yes'" (click)="row.treatmentGap='Yes'">Yes</div>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="row" style="margin-top:8px;gap:8px">
+                  <button pButton label="+ Add Reaction" class="p-button-ghost p-button-sm" (click)="addRTReactionRow()"></button>
+                  <div class="spacer"></div>
+                  <button pButton label="✓ Reactions Assessed" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-acute');showToast('Acute reactions documented')"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <span class="text-muted text-sm">RT Fraction {{patients.rt.fractionCurrent}}</span>
+            <div class="spacer"></div>
+            <button pButton label="Dose & OAR →" class="p-button-sm teal-btn" (click)="switchTab('dose')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: DOSE & OAR (summary) -->
+        <div class="tab-pane" [class.active]="activeTab==='dose'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-oar">
+              <div class="sec-head" (click)="toggleSection('oar')">
+                <div class="sec-ico" style="background:rgba(14,116,144,.08)">📊</div>
+                <div><div class="sec-title">Dose Summary & OAR Constraints <span class="req-star">*</span></div></div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('oar')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('oar')">
+                <div class="stats-strip">
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">Fraction Dose</div>
+                    <div class="stat-val mono teal">{{patients.rt.fractionDose}} Gy</div>
+                  </div>
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">Cumulative</div>
+                    <div class="stat-val mono teal">{{rtCumulativeDose}} / {{patients.rt.totalDose}} Gy</div>
+                  </div>
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">Fractions</div>
+                    <div class="stat-val mono">{{patients.rt.fractionCurrent}} / {{patients.rt.fractionTotal}}</div>
+                  </div>
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">Technique</div>
+                    <div class="stat-val">{{patients.rt.technique}} · {{patients.rt.energy}}</div>
+                  </div>
+                  <div class="stat-cell">
+                    <div class="stat-cell-label">Machine</div>
+                    <div class="stat-val">{{patients.rt.machine}}</div>
+                  </div>
+                </div>
+                <div class="table-wrap" style="margin-top:12px">
+                  <table class="data-table">
+                    <thead><tr><th>OAR</th><th>Constraint</th><th>Delivered (Cumulative)</th><th>Status</th></tr></thead>
+                    <tbody>
+                      <tr><td>Bladder</td><td>V50 &lt; 35%</td><td>V50 = 28% (est.)</td><td><span class="oar-ok">✓ OK</span></td></tr>
+                      <tr><td>Rectum</td><td>V50 &lt; 50%</td><td>V50 = 42% (est.)</td><td><span class="oar-ok">✓ OK</span></td></tr>
+                      <tr><td>Bowel (small)</td><td>V45 &lt; 195cc</td><td>V45 = 180cc (est.)</td><td><span class="oar-warn">⚠ Near limit</span></td></tr>
+                      <tr><td>Femoral Heads</td><td>Dmax &lt; 50 Gy</td><td>42 Gy (est.)</td><td><span class="oar-ok">✓ OK</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="row justify-end" style="margin-top:8px">
+                  <button pButton label="✓ OAR Reviewed" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-oar');showToast('OAR constraints reviewed')"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Fraction Visit" class="p-button-ghost p-button-sm" (click)="switchTab('fraction')"></button>
+            <div class="spacer"></div>
+            <button pButton label="QA & Sign-off →" class="p-button-sm teal-btn" (click)="switchTab('qasig')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: CONCURRENT CHEMO -->
+        <div class="tab-pane" [class.active]="activeTab==='concurrent'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-concurrent">
+              <div class="sec-head" (click)="toggleSection('concurrent')">
+                <div class="sec-ico" style="background:rgba(180,83,9,.07)">💊</div>
+                <div>
+                  <div class="sec-title">Concurrent Chemotherapy Status <span class="req-star">*</span></div>
+                  <div class="sec-subtitle">Cisplatin weekly concurrent review</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('concurrent')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('concurrent')">
+                <div class="fgrid fg-3">
+                  <div class="fgroup"><label class="flabel">Cisplatin Due This Week?</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="rtForm.cisplatinDue==='Yes'" [class.amber]="rtForm.cisplatinDue==='Yes'" (click)="rtForm.cisplatinDue='Yes'">Yes</div>
+                      <div class="rtg-opt" [class.active]="rtForm.cisplatinDue==='No'" [class.green]="rtForm.cisplatinDue==='No'" (click)="rtForm.cisplatinDue='No'">No</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Given This Fraction?</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="rtForm.cisplatinThisFraction==='Yes'" [class.green]="rtForm.cisplatinThisFraction==='Yes'" (click)="rtForm.cisplatinThisFraction='Yes'">Yes</div>
+                      <div class="rtg-opt" [class.active]="rtForm.cisplatinThisFraction==='No'" [class.amber]="rtForm.cisplatinThisFraction==='No'" (click)="rtForm.cisplatinThisFraction='No'">No</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Last Cisplatin Date</label>
+                    <p-calendar [(ngModel)]="rtForm.lastCisplatinDate" name="lastCisDate" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full"></p-calendar>
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Concurrent Chemo Reviewed" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-concurrent');showToast('Concurrent chemo documented')"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Dose & OAR" class="p-button-ghost p-button-sm" (click)="switchTab('dose')"></button>
+            <div class="spacer"></div>
+            <button pButton label="QA & Sign-off →" class="p-button-sm teal-btn" (click)="switchTab('qasig')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: QA & SIGN-OFF -->
+        <div class="tab-pane" [class.active]="activeTab==='qasig'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-peer">
+              <div class="sec-head" (click)="toggleSection('peer')">
+                <div class="sec-ico" style="background:rgba(61,82,160,.07)">🔍</div>
+                <div>
+                  <div class="sec-title">Peer Review & QA Checks</div>
+                  <div class="sec-subtitle">Physics QA verification and peer review documentation</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('peer')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('peer')">
+                <div class="fgrid fg-3">
+                  <div class="fgroup"><label class="flabel">Pre-treatment QA Type</label>
+                    <p-dropdown [options]="qaTypeOptions" [(ngModel)]="rtForm.qaType" name="qaType" optionLabel="label" optionValue="value" styleClass="w-full"></p-dropdown>
+                  </div>
+                  <div class="fgroup"><label class="flabel">QA Result</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="rtForm.qaResult==='Pass'" [class.green]="rtForm.qaResult==='Pass'" (click)="rtForm.qaResult='Pass';markDone('ck-peer')">Pass</div>
+                      <div class="rtg-opt" [class.active]="rtForm.qaResult==='Pass with action'" [class.amber]="rtForm.qaResult==='Pass with action'" (click)="rtForm.qaResult='Pass with action'">Pass with action</div>
+                      <div class="rtg-opt" [class.active]="rtForm.qaResult==='Fail — halt'" [class.red]="rtForm.qaResult==='Fail — halt'" (click)="rtForm.qaResult='Fail — halt'">Fail — halt</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Machine QA Log</label>
+                    <input pInputText [(ngModel)]="rtForm.machineQaLog" name="qaLog" class="p-inputtext-sm w-full mono">
+                  </div>
+                  <div class="fgroup"><label class="flabel">Peer Review Done?</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="rtForm.peerReviewDone==='Yes'" [class.green]="rtForm.peerReviewDone==='Yes'" (click)="rtForm.peerReviewDone='Yes'">Yes</div>
+                      <div class="rtg-opt" [class.active]="rtForm.peerReviewDone==='No'" (click)="rtForm.peerReviewDone='No'">No</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Peer Reviewer</label>
+                    <input pInputText [(ngModel)]="rtForm.peerReviewer" name="peerReviewer" class="p-inputtext-sm w-full">
+                  </div>
+                  <div class="fgroup"><label class="flabel">Peer Review Outcome</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="rtForm.peerReviewOutcome==='Plan approved'" [class.green]="rtForm.peerReviewOutcome==='Plan approved'" (click)="rtForm.peerReviewOutcome='Plan approved'">Plan approved</div>
+                      <div class="rtg-opt" [class.active]="rtForm.peerReviewOutcome==='Minor modification'" [class.amber]="rtForm.peerReviewOutcome==='Minor modification'" (click)="rtForm.peerReviewOutcome='Minor modification'">Minor modification</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="fgroup">
+                  <label class="flabel">QA / Peer Review Notes</label>
+                  <textarea pInputTextarea [(ngModel)]="rtForm.qaNotes" name="qaNotes" [rows]="2" class="w-full"></textarea>
+                </div>
+              </div>
+            </div>
+            <!-- Patient Advice -->
+            <div class="sec" id="sec-advice">
+              <div class="sec-head" (click)="toggleSection('advice')">
+                <div class="sec-ico" style="background:rgba(26,127,90,.07)">💬</div>
+                <div>
+                  <div class="sec-title">Patient Advice & Education</div>
+                  <div class="sec-subtitle">Instructions for today and upcoming fractions</div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('advice')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('advice')">
+                <div class="fgrid fg-2">
+                  <div class="fgroup">
+                    <label class="flabel">Advice Given Today</label>
+                    <textarea pInputTextarea [(ngModel)]="rtForm.adviceGiven" name="rtAdvice" [rows]="5" class="w-full"></textarea>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel">Emergency Contacts Provided</label>
+                    <textarea pInputTextarea [(ngModel)]="rtForm.emergencyContacts" name="rtEmergency" [rows]="3" class="w-full"></textarea>
+                  </div>
+                </div>
+                <div class="fgrid fg-3">
+                  <div class="fgroup"><label class="flabel">Next Fraction Date</label>
+                    <p-calendar [(ngModel)]="rtForm.nextFractionDate" name="nextFracDate" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full" (onSelect)="markDone('ck-advice')"></p-calendar>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Next Fraction Time</label>
+                    <input pInputText type="time" [(ngModel)]="rtForm.nextFractionTime" name="nextFracTime" class="p-inputtext-sm w-full">
+                  </div>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ Advice Documented" class="p-button-outlined p-button-sm" style="color:var(--teal);border-color:rgba(14,116,144,.3)"
+                    (click)="markDone('ck-advice');showToast('Patient advice documented')"></button>
+                </div>
+              </div>
+            </div>
+            <!-- Signatures -->
+            <div class="sec" id="sec-sig">
+              <div class="sec-head" (click)="toggleSection('rtSig')">
+                <div class="sec-ico" style="background:rgba(61,82,160,.07)">✍️</div>
+                <div>
+                  <div class="sec-title">RO + MP + RTT — Mandatory Sign-off <span class="req-star">*</span></div>
+                  <div class="sec-subtitle">All three required before fraction is recorded as complete</div>
+                </div>
+                <span class="chip chip-red">All 3 required</span>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('rtSig')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('rtSig')">
+                <div class="alert-box alert-info" style="margin-bottom:12px">
+                  <span class="alert-ico">ℹ️</span>
+                  <div class="alert-body">
+                    <div class="alert-title">NER sign-off: Radiation Oncologist → Medical Physicist → Radiation Therapist</div>
+                    <div class="alert-sub">All three roles must electronically verify Fraction {{patients.rt.fractionCurrent}} before it is recorded.</div>
+                  </div>
+                </div>
+                <div class="sig-grid">
+                  <div class="sig-card" [class.signed]="rtForm.roSigned">
+                    <div class="sig-role">☢️ Radiation Oncologist</div>
+                    <div class="sig-name">Dr. Meera Sundar</div>
+                    <div class="sig-time mono">{{rtForm.roSigned ? rtForm.roTime : 'Pending'}}</div>
+                    <button class="sig-btn" [class.signed-btn]="rtForm.roSigned" [disabled]="rtForm.roSigned"
+                      (click)="signRole('ro', rtForm)">{{rtForm.roSigned ? '✓ Signed' : 'Sign — Fraction Approved'}}</button>
+                  </div>
+                  <div class="sig-card" [class.signed]="rtForm.mpSigned">
+                    <div class="sig-role">⚛️ Medical Physicist</div>
+                    <div class="sig-name">Mr. Kiran Bhat</div>
+                    <div class="sig-time mono">{{rtForm.mpSigned ? rtForm.mpTime : 'Pending'}}</div>
+                    <button class="sig-btn" [class.signed-btn]="rtForm.mpSigned" [disabled]="rtForm.mpSigned"
+                      (click)="signRole('mp', rtForm)">{{rtForm.mpSigned ? '✓ Signed' : 'Sign — Physics QA Cleared'}}</button>
+                  </div>
+                  <div class="sig-card" [class.signed]="rtForm.rttSigned">
+                    <div class="sig-role">🩻 Radiation Therapist</div>
+                    <div class="sig-name">RTT Preethi Das</div>
+                    <div class="sig-time mono">{{rtForm.rttSigned ? rtForm.rttTime : 'Pending'}}</div>
+                    <button class="sig-btn" [class.signed-btn]="rtForm.rttSigned" [disabled]="rtForm.rttSigned"
+                      (click)="signRole('rtt', rtForm)">{{rtForm.rttSigned ? '✓ Signed' : 'Sign — Fraction Delivered'}}</button>
+                  </div>
+                </div>
+                <div class="fgrid fg-3" style="margin-top:12px">
+                  <div class="fgroup"><label class="flabel">Fraction Delivery Time</label>
+                    <input pInputText type="time" [(ngModel)]="rtForm.fractionTime" name="fracTime" class="p-inputtext-sm w-full mono">
+                  </div>
+                  <div class="fgroup"><label class="flabel">Beam-on Time (min)</label>
+                    <input pInputText type="number" [(ngModel)]="rtForm.beamOnTime" name="beamOn" step="0.1" class="p-inputtext-sm w-full mono">
+                  </div>
+                  <div class="fgroup"><label class="flabel">ICD / Treatment Code</label>
+                    <input pInputText [(ngModel)]="rtForm.icdCode" name="rtIcd" class="p-inputtext-sm w-full mono">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Concurrent Chemo" class="p-button-ghost p-button-sm" (click)="switchTab('concurrent')"></button>
+            <div class="spacer"></div>
+            <button pButton label="🖨️ Print Fraction Record" class="p-button-ghost p-button-sm"></button>
+            <button pButton label="✅ Finalise Fraction {{patients.rt.fractionCurrent}}" class="p-button-sm teal-btn" (click)="finalise()"></button>
+          </div>
+        </div>
+
+      </ng-container>
+
+      <!-- ════════════════════════════════════════════
+           DECISION VISIT TABS
+      ════════════════════════════════════════════ -->
+      <ng-container *ngIf="currentScreen==='decision'">
+        <!-- TAB: INVESTIGATION RESULTS -->
+        <div class="tab-pane" [class.active]="activeTab==='results'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-invresults">
+              <div class="sec-head" (click)="toggleSection('invres')">
+                <div class="sec-ico" style="background:rgba(109,40,217,.07)">🔬</div>
+                <div><div class="sec-title">Investigation Results Review</div></div>
+                <span class="chip chip-green">All reviewed</span>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('invres')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('invres')">
+                <div class="inv-grid">
+                  <div class="inv-card abnormal"><div class="inv-name">CEA</div><div class="inv-value mono">12.4</div><div class="inv-ref">Ref: &lt;5 ng/mL</div><div class="inv-flag high">↑ HIGH</div></div>
+                  <div class="inv-card abnormal"><div class="inv-name">CA 19-9</div><div class="inv-value mono">89</div><div class="inv-ref">Ref: &lt;37 U/mL</div><div class="inv-flag high">↑ HIGH</div></div>
+                  <div class="inv-card normal"><div class="inv-name">Hb</div><div class="inv-value mono">11.2</div><div class="inv-ref">12–16 g/dL</div><div class="inv-flag low">↓ LOW</div></div>
+                  <div class="inv-card normal"><div class="inv-name">Creatinine</div><div class="inv-value mono">1.0</div><div class="inv-ref">0.6–1.2</div><div class="inv-flag normal">✓ OK</div></div>
+                  <div class="inv-card normal"><div class="inv-name">ALT</div><div class="inv-value mono">38</div><div class="inv-ref">&lt;45 U/L</div><div class="inv-flag normal">✓ OK</div></div>
+                  <div class="inv-card normal"><div class="inv-name">ALP</div><div class="inv-value mono">92</div><div class="inv-ref">30–120</div><div class="inv-flag normal">✓ OK</div></div>
+                </div>
+                <div class="sec-divider"></div>
+                <div class="fgroup">
+                  <label class="flabel">Imaging Summary (MRI Rectum / CECT)</label>
+                  <textarea pInputTextarea [ngModel]="'MRI Rectum: Annular growth at rectosigmoid junction, 5 cm segment. T3 invasion through muscularis propria. Mesorectal lymph nodes: 4 enlarged (largest 1.8 cm). No peritoneal deposits.\n\nCECT Chest-Abdomen-Pelvis: Liver clear. No distant metastases. M0.'" name="imagingSummary" [rows]="4" class="w-full" readonly></textarea>
+                </div>
+                <div class="fgroup" style="margin-top:8px">
+                  <label class="flabel">Histopathology Report</label>
+                  <textarea pInputTextarea [ngModel]="'Colonoscopic biopsy — Rectosigmoid junction.\nDiagnosis: Moderately Differentiated Adenocarcinoma\nMSI Status: MSS (Microsatellite Stable)\nMMR IHC: MLH1+, MSH2+, MSH6+, PMS2+'" name="histoReport" [rows]="4" class="w-full" readonly></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <span class="text-muted text-sm">Decision Visit</span>
+            <div class="spacer"></div>
+            <button pButton label="Staging & MDT →" class="p-button-sm violet-btn" (click)="switchTab('staging')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: STAGING & MDT -->
+        <div class="tab-pane" [class.active]="activeTab==='staging'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-staging">
+              <div class="sec-head" (click)="toggleSection('staging')">
+                <div class="sec-ico" style="background:rgba(109,40,217,.07)">📊</div>
+                <div>
+                  <div class="sec-title">TNM Staging (AJCC 8th Ed.) <span class="req-star">*</span></div>
+                </div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('staging')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('staging')">
+                <div class="staging-display">
+                  <div class="staging-item"><div class="staging-val">{{decisionForm.tStage}}</div><div class="staging-lbl">T</div></div>
+                  <div class="staging-sep"></div>
+                  <div class="staging-item"><div class="staging-val">{{decisionForm.nStage}}</div><div class="staging-lbl">N</div></div>
+                  <div class="staging-sep"></div>
+                  <div class="staging-item"><div class="staging-val">{{decisionForm.mStage}}</div><div class="staging-lbl">M</div></div>
+                  <div class="staging-sep"></div>
+                  <div class="staging-full">
+                    <div class="staging-full-title">Stage {{decisionForm.ajccStage}} — {{patients.decision.diagnosis}}</div>
+                    <div class="staging-full-sub">{{decisionForm.histology}} · {{decisionForm.msiStatus}}</div>
+                  </div>
+                </div>
+                <div class="fgrid fg-4" style="margin-top:12px">
+                  <div class="fgroup"><label class="flabel req">T Stage</label>
+                    <div class="rtg">
+                      <div *ngFor="let t of ['T1','T2','T3','T4']" class="rtg-opt" [class.active]="decisionForm.tStage===t" [class.indigo]="decisionForm.tStage===t" (click)="decisionForm.tStage=t">{{t}}</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel req">N Stage</label>
+                    <div class="rtg">
+                      <div *ngFor="let n of ['N0','N1','N2']" class="rtg-opt" [class.active]="decisionForm.nStage===n" [class.indigo]="decisionForm.nStage===n" (click)="decisionForm.nStage=n">{{n}}</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel req">M Stage</label>
+                    <div class="rtg">
+                      <div *ngFor="let m of ['M0','M1a','M1b']" class="rtg-opt" [class.active]="decisionForm.mStage===m" [class.indigo]="decisionForm.mStage===m" (click)="decisionForm.mStage=m">{{m}}</div>
+                    </div>
+                  </div>
+                  <div class="fgroup"><label class="flabel">AJCC Stage</label>
+                    <input pInputText [(ngModel)]="decisionForm.ajccStage" name="ajccStage" class="p-inputtext-sm w-full mono">
+                  </div>
+                </div>
+                <div class="row justify-end" style="margin-top:8px">
+                  <button pButton label="✓ Staging Documented" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-staging');showToast('Staging documented')"></button>
+                </div>
+              </div>
+            </div>
+            <div class="sec" id="sec-mdt">
+              <div class="sec-head" (click)="toggleSection('mdt')">
+                <div class="sec-ico" style="background:rgba(109,40,217,.07)">🏛️</div>
+                <div><div class="sec-title">MDT Discussion <span class="req-star">*</span></div></div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('mdt')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('mdt')">
+                <div class="fgrid fg-2">
+                  <div class="fgroup"><label class="flabel">MDT Date</label>
+                    <p-calendar [(ngModel)]="decisionForm.mdtDate" name="mdtDate" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full"></p-calendar>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Treatment Intent</label>
+                    <div class="rtg">
+                      <div class="rtg-opt" [class.active]="decisionForm.treatmentIntent==='Curative'" [class.green]="decisionForm.treatmentIntent==='Curative'" (click)="decisionForm.treatmentIntent='Curative'">Curative</div>
+                      <div class="rtg-opt" [class.active]="decisionForm.treatmentIntent==='Palliative'" [class.amber]="decisionForm.treatmentIntent==='Palliative'" (click)="decisionForm.treatmentIntent='Palliative'">Palliative</div>
+                      <div class="rtg-opt" [class.active]="decisionForm.treatmentIntent==='Best Supportive'" [class.red]="decisionForm.treatmentIntent==='Best Supportive'" (click)="decisionForm.treatmentIntent='Best Supportive'">Best Supportive</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="fgroup">
+                  <label class="flabel req">MDT Decision</label>
+                  <textarea pInputTextarea [(ngModel)]="decisionForm.mdtDecision" name="mdtDecision" [rows]="3" required class="w-full" #mdtField="ngModel"></textarea>
+                  <small class="p-error" *ngIf="mdtField.invalid && mdtField.touched">MDT decision is required</small>
+                </div>
+                <div class="row justify-end">
+                  <button pButton label="✓ MDT Documented" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-mdt');showToast('MDT documented')"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Results" class="p-button-ghost p-button-sm" (click)="switchTab('results')"></button>
+            <div class="spacer"></div>
+            <button pButton label="Treatment Plan →" class="p-button-sm violet-btn" (click)="switchTab('plan')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: TREATMENT PLAN -->
+        <div class="tab-pane" [class.active]="activeTab==='plan'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-plan">
+              <div class="sec-head" (click)="toggleSection('plan')">
+                <div class="sec-ico" style="background:rgba(109,40,217,.07)">📋</div>
+                <div><div class="sec-title">Treatment Plan Decision <span class="req-star">*</span></div></div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('plan')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('plan')">
+                <div class="fgroup">
+                  <label class="flabel req">Plan Decision</label>
+                  <textarea pInputTextarea [(ngModel)]="decisionForm.mdtDecision" name="planDecision" [rows]="3" required class="w-full"></textarea>
+                </div>
+                <div class="fgrid fg-2" style="margin-top:8px">
+                  <div class="fgroup"><label class="flabel">RT Consultation Date</label>
+                    <p-calendar [(ngModel)]="decisionForm.rtConsultDate" name="rtConsultDate" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full"></p-calendar>
+                  </div>
+                  <div class="fgroup"><label class="flabel">Surgery Consultation Date</label>
+                    <p-calendar [(ngModel)]="decisionForm.surgeryConsultDate" name="surgConsultDate" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full"></p-calendar>
+                  </div>
+                </div>
+                <div class="row justify-end" style="margin-top:8px">
+                  <button pButton label="✓ Plan Documented" class="p-button-outlined p-button-sm"
+                    (click)="markDone('ck-plan');markDone('ck-counsel2');showToast('Treatment plan saved')"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Staging" class="p-button-ghost p-button-sm" (click)="switchTab('staging')"></button>
+            <div class="spacer"></div>
+            <button pButton label="Consent & Scheduling →" class="p-button-sm violet-btn" (click)="switchTab('consent')"></button>
+          </div>
+        </div>
+
+        <!-- TAB: CONSENT & SCHEDULING -->
+        <div class="tab-pane" [class.active]="activeTab==='consent'">
+          <div class="pane-scroll">
+            <div class="sec" id="sec-consent">
+              <div class="sec-head" (click)="toggleSection('consent')">
+                <div class="sec-ico" style="background:rgba(26,127,90,.08)">📝</div>
+                <div><div class="sec-title">Informed Consent & Scheduling <span class="req-star">*</span></div></div>
+                <div class="sec-toggle" [class.collapsed]="isSectionCollapsed('consent')">▾</div>
+              </div>
+              <div class="sec-body" *ngIf="!isSectionCollapsed('consent')">
+                <div class="fgrid fg-2">
+                  <div class="fgroup">
+                    <div class="consent-box" [class.warn]="!decisionForm.consentSigned">
+                      <span style="font-size:20px">{{decisionForm.consentSigned ? '✅' : '⚠️'}}</span>
+                      <div>
+                        <div style="font-weight:600;font-size:12px">Written Informed Consent</div>
+                        <div style="font-size:11px;color:var(--ink-2);margin-top:3px">{{decisionForm.consentSigned ? 'Consent obtained on '+decisionForm.consentDate : 'Not yet obtained — required before treatment'}}</div>
+                      </div>
+                    </div>
+                    <div style="margin-top:10px">
+                      <p-checkbox [(ngModel)]="decisionForm.consentSigned" name="consentCheck" [binary]="true" label="Consent form signed and witnessed"
+                        (onChange)="$event.checked && (decisionForm.consentDate='11 Jan 2025') && markDone('ck-consent')"></p-checkbox>
+                    </div>
+                  </div>
+                  <div class="fgroup">
+                    <label class="flabel req">Planned Treatment Start Date</label>
+                    <p-calendar [(ngModel)]="decisionForm.treatmentStartDate" name="txStartDate" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full" (onSelect)="markDone('ck-sched')"></p-calendar>
+                    <label class="flabel" style="margin-top:10px">Follow-up Appointment</label>
+                    <p-calendar [(ngModel)]="decisionForm.followUpDate" name="dvFollowUp" [showIcon]="true" dateFormat="yy-mm-dd" styleClass="w-full" (onSelect)="markDone('ck-fu2')"></p-calendar>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button pButton label="← Treatment Plan" class="p-button-ghost p-button-sm" (click)="switchTab('plan')"></button>
+            <div class="spacer"></div>
+            <button pButton label="✅ Finalise Decision Visit" class="p-button-sm violet-btn" (click)="finalise()"></button>
+          </div>
+        </div>
+      </ng-container>
+
+    </div><!-- main -->
+  </div><!-- body-row -->
+</div><!-- shell -->

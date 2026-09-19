@@ -1,0 +1,26 @@
+.layout {
+  display: flex;
+  height: 100vh;
+  background-color: whitesmoke;
+  overflow: hidden; /* prevents layout overflow */
+}
+
+/* Sidebar */
+app-nav {
+  width: 250px; /* adjust as needed */
+  background-color: whitesmoke; /* or whatever color */
+  color: white;
+  height: 100vh; /* full height of viewport */
+  position: sticky;
+  top: 0; /* stays at top when scrolling */
+  overflow-y: auto; /* scroll inside sidebar if needed */
+}
+
+/* Main Content */
+.content {
+  flex: 1;
+  padding: 1rem;
+  background: #f9f9f9;
+  height: 100vh;
+  overflow-y: auto; /* scrolls content independently */
+}

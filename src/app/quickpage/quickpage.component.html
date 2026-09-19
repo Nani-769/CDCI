@@ -1,0 +1,787 @@
+<!-- ══ SHELL ══ -->
+<div class="shell">
+
+  <!-- ══ TOPBAR ══ -->
+  <div class="topbar">
+    <div class="tb-brand">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#90caff" stroke-width="1.8"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+      <span class="bname">NER Oncology EMR</span>
+      <span class="bsep">/</span>
+      <span class="bmod">Patient Worklist</span>
+    </div>
+    <div class="tb-spacer"></div>
+    <div class="tb-date">{{ currentDateTime }}</div>
+    <div class="tb-divider"></div>
+    <div class="tb-user">
+      <div class="tb-avatar">PS</div>
+      <div class="tb-user-info">
+        <div class="tb-uname">Dr. Priya Sharma</div>
+        <div class="tb-urole">Medical Oncology</div>
+      </div>
+      <span class="tb-badge">Sr. Consultant</span>
+    </div>
+    <button class="tb-ibtn" title="Notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+    </button>
+    <button class="tb-ibtn" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ══ TAB BAR ══ -->
+  <div class="tab-bar">
+    <!-- Tabs -->
+    <div class="tab-item" [class.active]="activeTab==='ALL'" (click)="switchTab('ALL')">
+      <div class="tab-color-dot" style="background:#1565c0"></div>
+      <div class="tab-cnt" [class.tab-cnt-active]="activeTab==='ALL'">{{ tabCounts.ALL }}</div>
+      <div class="tab-info">
+        <span class="tab-lbl" [class.tab-lbl-active]="activeTab==='ALL'">All Patients</span>
+        <span class="tab-sub">Today's schedule</span>
+      </div>
+    </div>
+    <div class="tab-item" [class.active]="activeTab==='ER'" (click)="switchTab('ER')" style="position:relative">
+      <div class="tab-color-dot" style="background:#c62828"></div>
+      <div class="tab-cnt" [class.tab-cnt-active]="activeTab==='ER'">{{ tabCounts.ER }}</div>
+      <div class="tab-info">
+        <span class="tab-lbl" [class.tab-lbl-active]="activeTab==='ER'">Emergency</span>
+        <span class="tab-sub">Urgent review</span>
+      </div>
+      <div class="tab-urgency">{{ tabCounts.ER }}</div>
+    </div>
+    <div class="tab-item" [class.active]="activeTab==='IP'" (click)="switchTab('IP')">
+      <div class="tab-color-dot" style="background:#4a148c"></div>
+      <div class="tab-cnt" [class.tab-cnt-active]="activeTab==='IP'">{{ tabCounts.IP }}</div>
+      <div class="tab-info">
+        <span class="tab-lbl" [class.tab-lbl-active]="activeTab==='IP'">Inpatient</span>
+        <span class="tab-sub">Ward 4B · 5C</span>
+      </div>
+    </div>
+    <div class="tab-item" [class.active]="activeTab==='DC'" (click)="switchTab('DC')">
+      <div class="tab-color-dot" style="background:#1b5e20"></div>
+      <div class="tab-cnt" [class.tab-cnt-active]="activeTab==='DC'">{{ tabCounts.DC }}</div>
+      <div class="tab-info">
+        <span class="tab-lbl" [class.tab-lbl-active]="activeTab==='DC'">Daycare</span>
+        <span class="tab-sub">Chemo infusion</span>
+      </div>
+    </div>
+    <div class="tab-item" [class.active]="activeTab==='OP'" (click)="switchTab('OP')">
+      <div class="tab-color-dot" style="background:#0d47a1"></div>
+      <div class="tab-cnt" [class.tab-cnt-active]="activeTab==='OP'">{{ tabCounts.OP }}</div>
+      <div class="tab-info">
+        <span class="tab-lbl" [class.tab-lbl-active]="activeTab==='OP'">Outpatient</span>
+        <span class="tab-sub">3 pending labs</span>
+      </div>
+    </div>
+    <div class="tab-spacer"></div>
+
+    <!-- Inline filters (right side of tab bar) -->
+    <div class="tab-bar-right">
+      <div class="fb-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" [(ngModel)]="searchText" name="searchBox" placeholder="Name / MR no…">
+      </div>
+      <select class="fb-sel" [(ngModel)]="selectedDoctor" name="docFilter">
+        <option *ngFor="let d of doctorOptions" [value]="d.value">{{ d.label }}</option>
+      </select>
+      <select class="fb-sel" [(ngModel)]="selectedWard" name="wardFilter">
+        <option *ngFor="let w of wardOptions" [value]="w.value">{{ w.label }}</option>
+      </select>
+      <select class="fb-sel" [(ngModel)]="selectedStatus" name="statusFilter">
+        <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ══ MODALITY FILTER BAR ══ -->
+  <div class="filter-bar">
+    <span class="fb-lbl">Modality</span>
+    <div class="mod-pills">
+      <div *ngFor="let mod of modalityPills"
+           class="mpill"
+           [class.on]="activeModality === mod"
+           [attr.data-mod]="mod"
+           (click)="filterModality(mod)">
+        {{ mod === 'ALL' ? 'All' : mod }}
+      </div>
+    </div>
+    <div class="fb-right">
+      <div class="fb-count"><b>{{ filteredPatients.length }}</b> patients shown</div>
+    </div>
+  </div>
+
+  <!-- ══ GRID ══ -->
+  <div class="grid-wrap">
+    <!-- Desktop header -->
+    <div class="grid-head hide-mobile">
+      <div class="gh">#</div>
+      <div class="gh">Patient · Diagnosis</div>
+      <div class="gh">Setting · Time</div>
+      <div class="gh">Modality · Protocol</div>
+      <div class="gh">Clinical Flags</div>
+      <div class="gh">Status</div>
+      <div class="gh">Doctor · Ward</div>
+      <div class="gh">Actions</div>
+    </div>
+
+    <!-- Scrollable list -->
+    <div class="list-scroll">
+      <div *ngFor="let p of filteredPatients; let i = index; trackBy: trackById"
+           class="pt-row"
+           [class.sel]="selectedPatientId === p.id"
+           [class.hipri]="isHighPriority(p)"
+           [class.er-row]="isErRow(p)"
+           (click)="selectPatient(p)">
+
+        <!-- # -->
+        <div class="rc idx hide-mobile">{{ i + 1 }}</div>
+
+        <!-- Patient + Diagnosis -->
+        <div class="rc patient">
+          <div class="pname">
+            {{ p.name }}
+            <span *ngIf="p.priority === 'High'" class="pri-dot"></span>
+          </div>
+          <div class="pmrn">{{ p.mrn }} · {{ p.age }}Y/{{ p.sex }}</div>
+          <div class="pdiag">{{ p.diagnosis }}</div>
+        </div>
+
+        <!-- Setting + Time -->
+        <div class="rc setting">
+          <span [class]="getGroupBadgeClass(p.group)">{{ getGroupLabel(p.group) }}</span>
+          <div class="stime" [class.er]="p.group==='ER'">{{ p.time }}</div>
+        </div>
+
+        <!-- Modality + Protocol -->
+        <div class="rc modality">
+          <span class="mod-badge" [ngClass]="'mod-' + p.modality">{{ p.modality }}</span>
+          <div class="proto">{{ p.protocol }}</div>
+          <div class="mecog">ECOG {{ p.ecog }} · BSA {{ p.bsa }}</div>
+        </div>
+
+        <!-- Clinical Flags -->
+        <div class="rc flags">
+          <ng-container *ngFor="let f of getFlags(p); let fi = index">
+            <div *ngIf="fi < 3" class="frow">
+              <div class="fdot" [ngClass]="f.cls"></div>
+              <span class="ftxt" [ngClass]="f.cls">{{ f.label }}</span>
+            </div>
+          </ng-container>
+          <div *ngIf="getFlags(p).length > 2" class="frow">
+            <div class="fdot neu"></div>
+            <span class="ftxt neu">+{{ getFlags(p).length - 2 }} more</span>
+          </div>
+          <!-- Progress bar for chemo/radiation -->
+          <div *ngIf="p.cycleNum" class="prog-wrap">
+            <div class="prog-track">
+              <div class="prog-fill" [style.width.%]="(p.cycleNum / p.cycleTot) * 100"
+                   [style.background]="p.cycleNum===p.cycleTot ? '#2e7d32' : '#1565c0'"></div>
+            </div>
+            <span class="prog-lbl">{{ p.cycleNum }}/{{ p.cycleTot }}</span>
+          </div>
+          <div *ngIf="p.frNum != null" class="prog-wrap">
+            <div class="prog-track">
+              <div class="prog-fill" [style.width.%]="(p.frNum / p.frTot) * 100"
+                   [style.background]="p.frNum===p.frTot ? '#2e7d32' : '#7b3f00'"></div>
+            </div>
+            <span class="prog-lbl">{{ p.frNum }}/{{ p.frTot }} fr</span>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="rc status">
+          <div class="srow">
+            <div class="sdot" [ngClass]="getStatusDot(p.status)"></div>
+            <span class="slbl">{{ p.status }}</span>
+          </div>
+          <div *ngIf="!p.consent" class="srow" style="margin-top:3px">
+            <div class="sdot hold"></div>
+            <span class="slbl" style="color:#e65100;font-size:9px">Consent pending</span>
+          </div>
+        </div>
+
+        <!-- Doctor + Ward -->
+        <div class="rc staff hide-mobile">
+          <div class="drname">Dr. {{ p.doctor }}</div>
+          <div class="wname">{{ p.ward }}</div>
+        </div>
+
+        <!-- Actions -->
+        <div class="rc actions" (click)="$event.stopPropagation()">
+          <button class="abtn pri" (click)="openDrawer(p, 'assess')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span class="hide-xs">Notes</span>
+          </button>
+          <button class="abtn sec" (click)="openDrawer(p, 'rx')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+            </svg>
+            <span class="hide-xs">Rx</span>
+          </button>
+          <button class="abtn sec icon-only" (click)="openToxModal(p)" title="Toxicity">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="filteredPatients.length === 0" class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c5cdd8" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <p>No patients match your filters</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DETAIL PANEL ══ -->
+  <div class="detail-panel" *ngIf="selectedPatient">
+    <div class="dp-inner">
+      <div class="dp-left">
+        <div class="dp-name">{{ selectedPatient.name }}</div>
+        <div class="dp-meta">{{ selectedPatient.mrn }} · {{ selectedPatient.age }}Y/{{ selectedPatient.sex }} · BSA {{ selectedPatient.bsa }} m²</div>
+        <div class="dp-diag">{{ selectedPatient.diagnosis }}</div>
+        <div class="dp-flags">
+          <span *ngFor="let f of getFlags(selectedPatient)"
+                class="dp-chip" [ngClass]="f.cls">{{ f.label }}</span>
+        </div>
+      </div>
+      <div class="dp-stats">
+        <div class="dp-stat"><div class="dslbl">HB</div>   <div class="dsval" [ngClass]="getLabClass('HB',  selectedPatient)">{{ selectedPatient.labs.HB }}</div></div>
+        <div class="dp-stat"><div class="dslbl">PLT</div>  <div class="dsval" [ngClass]="getLabClass('PLT', selectedPatient)">{{ getPltK(selectedPatient.labs.PLT) }}</div></div>
+        <div class="dp-stat"><div class="dslbl">ANC</div>  <div class="dsval" [ngClass]="getLabClass('ANC', selectedPatient)">{{ selectedPatient.labs.ANC }}</div></div>
+        <div class="dp-stat"><div class="dslbl">WBC</div>  <div class="dsval">{{ selectedPatient.labs.WBC }}</div></div>
+        <div class="dp-stat"><div class="dslbl">Pain</div> <div class="dsval" [ngClass]="getLabClass('pain',selectedPatient)">{{ selectedPatient.pain }}/10</div></div>
+        <div class="dp-stat"><div class="dslbl">ECOG</div> <div class="dsval" [ngClass]="getLabClass('ecog',selectedPatient)">{{ selectedPatient.ecog }}</div></div>
+      </div>
+      <div class="dp-actions">
+        <button class="dpa blue"  (click)="openDrawer(selectedPatient,'assess')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Start Notes
+        </button>
+        <button class="dpa ghost" (click)="openDrawer(selectedPatient,'assess')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Assessment
+        </button>
+        <button class="dpa ghost" (click)="openDrawer(selectedPatient,'plan')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Treatment Plan
+        </button>
+        <button class="dpa ghost" (click)="openDrawer(selectedPatient,'labs')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11m0 0H5a2 2 0 0 0-2 2v3m6-5h10"/></svg>
+          Labs / Vitals
+        </button>
+        <button class="dpa ghost" (click)="openToxModal(selectedPatient)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Toxicity Log
+        </button>
+        <button class="dpa ghost" (click)="openDrawer(selectedPatient,'rx')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          Prescriptions
+        </button>
+        <button *ngIf="selectedPatient.modality==='Chemo'"
+                class="dpa blue" (click)="toast('Chemo authorised for '+selectedPatient.name+' ✓')">
+          Authorise Chemo
+        </button>
+        <button *ngIf="selectedPatient.modality==='Radiation'"
+                class="dpa ghost" (click)="toast('RT fraction recorded for '+selectedPatient.name+' ✓')">
+          Record Fraction
+        </button>
+        <button class="dpa danger" (click)="closeDetail()">✕ Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STATUS BAR ══ -->
+  <div class="statusbar">
+    <div class="sb-live"><div class="sb-ldot"></div>Live</div>
+    <div class="sb">Updated <b>{{ currentDateTime.split('|')[1] }}</b></div>
+    <div class="sb hide-sm">Shift <b>Morning 08:00–14:00</b></div>
+    <div class="sb">High priority <b>{{ statusBarStats.highPri }}</b></div>
+    <div class="sb hide-sm">Pending consent <b>{{ statusBarStats.pendConsent }}</b></div>
+    <div class="sb hide-sm">Lab alerts <b>{{ statusBarStats.labAlerts }}</b></div>
+    <div class="sb-spacer"></div>
+    <div class="sb hide-sm">NER Oncology EMR v2.0 · NCG-KCDO</div>
+  </div>
+
+</div><!-- /shell -->
+
+<!-- ══ WORK DRAWER ══ -->
+<div class="work-overlay" [class.open]="drawerOpen" (click)="closeDrawer()"></div>
+<div class="work-drawer" [class.open]="drawerOpen">
+  <div class="wk-grip"></div>
+
+  <!-- Drawer header -->
+  <div class="wk-head" *ngIf="drawerPatient">
+    <div class="wk-pt-name">{{ drawerPatient.name }}</div>
+    <div class="wk-pt-meta">{{ drawerPatient.mrn }} · {{ drawerPatient.age }}Y/{{ drawerPatient.sex }} · {{ drawerPatient.diagnosis }}</div>
+    <button class="wk-close" (click)="closeDrawer()">✕</button>
+  </div>
+
+  <!-- Drawer tabs -->
+  <div class="wk-tabs">
+    <div class="wk-tab" [class.active]="activeWkTab==='assess'" (click)="switchWkTab('assess')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Assessment
+    </div>
+    <div class="wk-tab" [class.active]="activeWkTab==='plan'" (click)="switchWkTab('plan')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+      Treatment Plan
+    </div>
+    <div class="wk-tab" [class.active]="activeWkTab==='tox'" (click)="switchWkTab('tox')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+      Toxicity Log
+    </div>
+    <div class="wk-tab" [class.active]="activeWkTab==='labs'" (click)="switchWkTab('labs')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11"/></svg>
+      Labs / Vitals
+    </div>
+    <div class="wk-tab" [class.active]="activeWkTab==='rx'" (click)="switchWkTab('rx')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+      Prescriptions
+    </div>
+  </div>
+
+  <!-- Drawer body -->
+  <div class="wk-body">
+
+    <!-- ASSESSMENT PANEL -->
+    <div class="wk-panel" *ngIf="activeWkTab==='assess' && drawerPatient">
+      <div class="wk-section-title">Clinical Assessment</div>
+      <div class="fe-grid-2">
+        <div class="fe-group">
+          <label class="fe-label">Chief Complaint <span class="req">*</span></label>
+          <input class="fe-input" [(ngModel)]="drawerPatient._complaint" name="complaint"
+                 #complaintRef="ngModel" required
+                 placeholder="e.g. Fever, fatigue, pain…">
+          <div class="fe-err" *ngIf="complaintRef.invalid && complaintRef.touched">Required</div>
+        </div>
+        <div class="fe-group">
+          <label class="fe-label">Vitals — Temperature (°C)</label>
+          <input class="fe-input" [(ngModel)]="drawerPatient._temp" name="temp" type="number"
+                 placeholder="37.0" min="35" max="42">
+        </div>
+        <div class="fe-group">
+          <label class="fe-label">BP (mmHg)</label>
+          <input class="fe-input" [(ngModel)]="drawerPatient._bp" name="bp"
+                 placeholder="120/80" pattern="^\d{2,3}\/\d{2,3}$"
+                 #bpRef="ngModel">
+          <div class="fe-err" *ngIf="bpRef.invalid && bpRef.touched">Format: 120/80</div>
+        </div>
+        <div class="fe-group">
+          <label class="fe-label">HR (bpm)</label>
+          <input class="fe-input" [(ngModel)]="drawerPatient._hr" name="hr" type="number"
+                 placeholder="80" min="30" max="250">
+        </div>
+        <div class="fe-group">
+          <label class="fe-label">SpO₂ (%)</label>
+          <input class="fe-input" [(ngModel)]="drawerPatient._spo2" name="spo2" type="number"
+                 placeholder="98" min="50" max="100">
+        </div>
+        <div class="fe-group">
+          <label class="fe-label">Weight (kg)</label>
+          <input class="fe-input" [(ngModel)]="drawerPatient._wt" name="wt" type="number"
+                 placeholder="65" min="20" max="200">
+        </div>
+      </div>
+      <div class="fe-group" style="margin-top:10px">
+        <label class="fe-label">Clinical Notes <span class="req">*</span></label>
+        <textarea class="fe-input fe-textarea" [(ngModel)]="drawerPatient._notes" name="notes"
+                  #notesRef="ngModel" required
+                  placeholder="Enter clinical assessment notes…" rows="4"></textarea>
+        <div class="fe-err" *ngIf="notesRef.invalid && notesRef.touched">Required</div>
+      </div>
+      <div class="fe-group">
+        <label class="fe-label">Clinical Decision</label>
+        <select class="fe-input fe-select" [(ngModel)]="drawerPatient._clinDecision" name="clinDecision">
+          <option value="">— select —</option>
+          <option value="Proceed">Proceed</option>
+          <option value="Hold">Hold</option>
+          <option value="Dose Reduce">Dose Reduce</option>
+          <option value="Refer">Refer</option>
+          <option value="Escalate">Escalate</option>
+        </select>
+      </div>
+      <div class="wk-actions">
+        <span class="wk-info-txt">All fields marked * are required</span>
+        <div class="right">
+          <button class="ghost-btn" (click)="toast('Assessment saved as draft ✓')">Save Draft</button>
+          <button class="save-btn" (click)="openEsignModal(drawerPatient)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>Sign &amp; Save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TREATMENT PLAN PANEL -->
+    <div class="wk-panel" *ngIf="activeWkTab==='plan' && drawerPatient">
+      <div class="wk-section-title">Treatment Plan</div>
+      <div class="ro-field" style="margin-bottom:12px">
+        <b>Patient:</b> {{ drawerPatient.name }} &nbsp;|&nbsp;
+        <b>Protocol:</b> {{ drawerPatient.protocol }} &nbsp;|&nbsp;
+        <b>Modality:</b> {{ drawerPatient.modality }}
+      </div>
+      <div class="fe-grid-2">
+        <div class="fe-group">
+          <label class="fe-label">Planned Start Date</label>
+          <input class="fe-input" type="date" [(ngModel)]="drawerPatient._planDate" name="planDate">
+        </div>
+        <div class="fe-group">
+          <label class="fe-label">Treatment Intent</label>
+          <select class="fe-input fe-select" [(ngModel)]="drawerPatient._intent" name="intent">
+            <option value="">— select —</option>
+            <option value="Curative">Curative</option>
+            <option value="Palliative">Palliative</option>
+            <option value="Adjuvant">Adjuvant</option>
+            <option value="Neo-adjuvant">Neo-adjuvant</option>
+          </select>
+        </div>
+      </div>
+      <div class="fe-group">
+        <label class="fe-label">Plan Details / Modifications</label>
+        <textarea class="fe-input fe-textarea" [(ngModel)]="drawerPatient._planNotes" name="planNotes"
+                  placeholder="Enter treatment plan details, dose modifications, hold reasons…" rows="4"></textarea>
+      </div>
+      <div class="wk-actions">
+        <span class="wk-info-txt"></span>
+        <div class="right">
+          <button class="ghost-btn" (click)="toast('Treatment plan saved as draft ✓')">Save Draft</button>
+          <button class="save-btn" (click)="openEsignModal(drawerPatient)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+            Sign &amp; Save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOXICITY LOG PANEL -->
+    <div class="wk-panel" *ngIf="activeWkTab==='tox' && drawerPatient">
+      <div class="wk-section-title">Toxicity Log — CTCAE v5.0</div>
+      <div class="tox-grid-hdr-row">
+        <div class="tgh">Cycle</div>
+        <div class="tgh">Day</div>
+        <div class="tgh">Place</div>
+        <div class="tgh">System</div>
+        <div class="tgh">Grade</div>
+        <div class="tgh">Adverse Event</div>
+        <div class="tgh"></div>
+      </div>
+      <div *ngFor="let row of toxRows; let ti = index" class="tox-row">
+        <input class="fe-input tox-cell" [(ngModel)]="row.cycle" [name]="'tc'+ti" placeholder="1">
+        <input class="fe-input tox-cell" [(ngModel)]="row.dayOnset" [name]="'td'+ti" placeholder="D5">
+        <select class="fe-input tox-cell fe-select" [(ngModel)]="row.place" [name]="'tp'+ti">
+          <option value="">—</option>
+          <option *ngFor="let o of toxPlaceOptions" [value]="o">{{ o }}</option>
+        </select>
+        <select class="fe-input tox-cell fe-select" [(ngModel)]="row.system" [name]="'ts'+ti">
+          <option value="">—</option>
+          <option *ngFor="let o of toxSystemOptions" [value]="o">{{ o }}</option>
+        </select>
+        <select class="fe-input tox-cell fe-select" [(ngModel)]="row.grade" [name]="'tg'+ti">
+          <option value="">—</option>
+          <option *ngFor="let g of toxGradeOptions" [value]="g.value">{{ g.label }}</option>
+        </select>
+        <input class="fe-input tox-cell tox-wide" [(ngModel)]="row.adverse" [name]="'ta'+ti"
+               placeholder="Description…">
+        <button class="tox-del" (click)="removeToxRow(ti)">×</button>
+      </div>
+      <button class="add-row-btn" (click)="addToxRow()">+ Add entry</button>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+        <div class="fe-group">
+          <label class="fe-label">Attributable to systemic therapy</label>
+          <select class="fe-input fe-select" [(ngModel)]="toxAttr" name="toxAttr">
+            <option>Unrelated</option><option>Possible</option>
+            <option>Probably</option><option>Definite</option>
+          </select>
+        </div>
+        <div class="fe-group">
+          <label class="fe-label">Postpone next cycle?</label>
+          <select class="fe-input fe-select" [(ngModel)]="postpone" name="postpone">
+            <option>No</option><option>Yes</option>
+          </select>
+          <div *ngIf="postpone==='Yes'" style="display:grid;grid-template-columns:1fr 70px;gap:6px;margin-top:6px">
+            <input class="fe-input" [(ngModel)]="postponeReason" name="postReason" placeholder="Reason">
+            <input class="fe-input" [(ngModel)]="postponeDays" name="postDays" placeholder="Days">
+          </div>
+        </div>
+      </div>
+      <div class="wk-actions">
+        <span class="wk-info-txt">Changes tracked for pharmacy review.</span>
+        <div class="right">
+          <button class="ghost-btn" (click)="closeDrawer()">Cancel</button>
+          <button class="save-btn" (click)="saveToxicity()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+            Save Toxicity Record
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LABS / VITALS PANEL -->
+    <div class="wk-panel" *ngIf="activeWkTab==='labs' && drawerPatient">
+      <div class="wk-section-title">Labs &amp; Vitals</div>
+      <div class="lab-grid">
+        <div class="lab-card" [ngClass]="getLabClass('HB', drawerPatient)">
+          <div class="lab-lbl">HB</div>
+          <div class="lab-val">{{ drawerPatient.labs.HB }} <span class="lab-unit">g/dL</span></div>
+          <div class="lab-ref">Ref: 12–16</div>
+        </div>
+        <div class="lab-card" [ngClass]="getLabClass('PLT', drawerPatient)">
+          <div class="lab-lbl">PLT</div>
+          <div class="lab-val">{{ getPltK(drawerPatient.labs.PLT) }} <span class="lab-unit">×10³</span></div>
+          <div class="lab-ref">Ref: >100K</div>
+        </div>
+        <div class="lab-card" [ngClass]="getLabClass('ANC', drawerPatient)">
+          <div class="lab-lbl">ANC</div>
+          <div class="lab-val">{{ drawerPatient.labs.ANC }} <span class="lab-unit">/µL</span></div>
+          <div class="lab-ref">Ref: >1500</div>
+        </div>
+        <div class="lab-card">
+          <div class="lab-lbl">WBC</div>
+          <div class="lab-val">{{ drawerPatient.labs.WBC }} <span class="lab-unit">K/µL</span></div>
+          <div class="lab-ref">Ref: 4–11</div>
+        </div>
+        <div class="lab-card" [ngClass]="getLabClass('pain', drawerPatient)">
+          <div class="lab-lbl">Pain</div>
+          <div class="lab-val">{{ drawerPatient.pain }}<span class="lab-unit">/10</span></div>
+          <div class="lab-ref">VAS score</div>
+        </div>
+        <div class="lab-card" [ngClass]="getLabClass('ecog', drawerPatient)">
+          <div class="lab-lbl">ECOG</div>
+          <div class="lab-val">{{ drawerPatient.ecog }}</div>
+          <div class="lab-ref">0–4 scale</div>
+        </div>
+      </div>
+      <div class="wk-actions" style="margin-top:12px">
+        <span class="wk-info-txt">Labs from last 24h. Flag values highlighted.</span>
+        <div class="right">
+          <button class="ghost-btn" (click)="closeDrawer()">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRESCRIPTIONS PANEL -->
+    <div class="wk-panel" *ngIf="activeWkTab==='rx' && drawerPatient">
+      <div class="wk-section-title">
+        Prescriptions
+        <span class="pulled-tag" style="margin-left:8px">Pre-filled from protocol</span>
+      </div>
+      <div class="ro-field" style="margin-bottom:10px">
+        <b>{{ drawerPatient.name }}</b> &nbsp;|&nbsp;
+        {{ drawerPatient.protocol }} &nbsp;|&nbsp;
+        BSA {{ drawerPatient.bsa }} m²
+      </div>
+      <div class="rx-scroll">
+        <table class="dtab">
+          <thead>
+            <tr>
+              <th>Indication</th>
+              <th>Drug</th>
+              <th>Route</th>
+              <th>Dose</th>
+              <th>Frequency</th>
+              <th>Days</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of rxRows; let ri = index">
+              <td>
+                <input class="fe-input" style="width:100%;font-size:10px"
+                       [(ngModel)]="r.sym" [name]="'rsym'+ri">
+              </td>
+              <td>
+                <input class="fe-input" style="width:100%;font-size:10px"
+                       [(ngModel)]="r.drug" [name]="'rdrug'+ri"
+                       (ngModelChange)="checkRxMod(r)" placeholder="Drug">
+                <span class="mod-badge2" *ngIf="r.modified">MOD</span>
+              </td>
+              <td>
+                <select class="fe-input fe-select" style="font-size:10px"
+                        [(ngModel)]="r.rt" [name]="'rrt'+ri"
+                        (ngModelChange)="checkRxMod(r)">
+                  <option *ngFor="let ro of routeOptions" [value]="ro">{{ ro }}</option>
+                </select>
+              </td>
+              <td>
+                <input class="fe-input" style="width:64px;font-size:10px"
+                       [(ngModel)]="r.dose" [name]="'rdose'+ri"
+                       (ngModelChange)="checkRxMod(r)">
+              </td>
+              <td>
+                <input class="fe-input" style="width:54px;font-size:10px"
+                       [(ngModel)]="r.freq" [name]="'rfreq'+ri"
+                       (ngModelChange)="checkRxMod(r)">
+              </td>
+              <td>
+                <input class="fe-input" style="width:44px;font-size:10px"
+                       [(ngModel)]="r.days" [name]="'rdays'+ri"
+                       (ngModelChange)="checkRxMod(r)">
+              </td>
+              <td>
+                <button class="rx-del" (click)="removeRxRow(ri)">×</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" (click)="addRxRow()">+ Add row</button>
+      <div class="wk-actions">
+        <span class="wk-info-txt">Changes to pre-filled items are tracked &amp; flagged for pharmacy review.</span>
+        <div class="right">
+          <button class="ghost-btn" (click)="saveRxDraft()">Save Draft</button>
+          <button class="save-btn" (click)="signAndSendPrescription()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>Sign &amp; Send to Pharmacy
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /wk-body -->
+</div><!-- /work-drawer -->
+
+<!-- ══ CTCAE MODAL ══ -->
+<div class="modal-overlay" [class.open]="ctcaeModalOpen" (click)="ctcaeModalOpen=false">
+  <div class="modal-box wide" (click)="$event.stopPropagation()">
+    <div class="modal-hdr">
+      <h3>CT-Part D — CTCAE v5.0 Toxicity Monitoring</h3>
+      <button class="modal-close" (click)="ctcaeModalOpen=false">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tox-grid-hdr-row">
+        <div class="tgh">Cycle</div><div class="tgh">Day</div><div class="tgh">Place</div>
+        <div class="tgh">System</div><div class="tgh">Grade</div>
+        <div class="tgh">Adverse Event</div><div class="tgh"></div>
+      </div>
+      <div *ngFor="let row of toxRows; let ti = index" class="tox-row">
+        <input class="fe-input tox-cell" [(ngModel)]="row.cycle"    [name]="'mtc'+ti" placeholder="1">
+        <input class="fe-input tox-cell" [(ngModel)]="row.dayOnset" [name]="'mtd'+ti" placeholder="D5">
+        <select class="fe-input tox-cell fe-select" [(ngModel)]="row.place" [name]="'mtp'+ti">
+          <option value="">—</option>
+          <option *ngFor="let o of toxPlaceOptions" [value]="o">{{ o }}</option>
+        </select>
+        <select class="fe-input tox-cell fe-select" [(ngModel)]="row.system" [name]="'mts'+ti">
+          <option value="">—</option>
+          <option *ngFor="let o of toxSystemOptions" [value]="o">{{ o }}</option>
+        </select>
+        <select class="fe-input tox-cell fe-select" [(ngModel)]="row.grade" [name]="'mtg'+ti">
+          <option value="">—</option>
+          <option *ngFor="let g of toxGradeOptions" [value]="g.value">{{ g.label }}</option>
+        </select>
+        <input class="fe-input tox-cell tox-wide" [(ngModel)]="row.adverse" [name]="'mta'+ti" placeholder="Description…">
+        <button class="tox-del" (click)="removeToxRow(ti)">×</button>
+      </div>
+      <button class="add-row-btn" (click)="addToxRow()">+ Add toxicity entry</button>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+        <div class="fe-group">
+          <label class="fe-label">Attributable to systemic therapy</label>
+          <select class="fe-input fe-select" [(ngModel)]="toxAttr" name="mtoxAttr">
+            <option>Unrelated</option><option>Possible</option>
+            <option>Probably</option><option>Definite</option>
+          </select>
+        </div>
+        <div class="fe-group">
+          <label class="fe-label">Postpone next cycle?</label>
+          <select class="fe-input fe-select" [(ngModel)]="postpone" name="mpostpone">
+            <option>No</option><option>Yes</option>
+          </select>
+          <div *ngIf="postpone==='Yes'" style="display:grid;grid-template-columns:1fr 70px;gap:6px;margin-top:6px">
+            <input class="fe-input" [(ngModel)]="postponeReason" name="mpostReason" placeholder="Reason">
+            <input class="fe-input" [(ngModel)]="postponeDays"   name="mpostDays"   placeholder="Days">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="ghost-btn" (click)="ctcaeModalOpen=false">Cancel</button>
+      <button class="save-btn" (click)="saveToxicity()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>Save Toxicity Record
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ E-SIGN MODAL ══[class.open]="esignModalOpen" -->
+<div class="modal-overlay"  (click)="esignModalOpen=false">
+  <div class="modal-box" style="width:min(400px,95vw)" (click)="$event.stopPropagation()">
+    <div class="modal-hdr">
+      <h3>{{ esignTitle }}</h3>
+      <button class="modal-close" (click)="esignModalOpen=false">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fe-group">
+        <label class="fe-label">Clinician Name</label>
+        <input class="fe-input" value="Dr. Priya Sharma" readonly style="width:100%">
+      </div>
+      <div class="fe-group">
+        <label class="fe-label">Medical Council Reg. No</label>
+        <input class="fe-input" value="TSMC-2011-44821" readonly style="width:100%">
+      </div>
+      <div class="fe-group">
+        <label class="fe-label">PIN <span class="req">*</span></label>
+        <input class="fe-input" type="password" [(ngModel)]="esignPin" name="esignPin"
+               #pinRef="ngModel" required minlength="4" maxlength="6"
+               placeholder="Enter 4–6 digit PIN" style="width:100%">
+        <div class="fe-err" *ngIf="pinRef.invalid && pinRef.touched">PIN must be 4–6 digits</div>
+      </div>
+      <div class="fe-group">
+        <label class="fe-label">Role</label>
+        <select class="fe-input fe-select" [(ngModel)]="esignRole" name="esignRole" style="width:100%">
+          <option>Treating consultant</option>
+          <option>Registrar</option>
+        </select>
+      </div>
+      <div class="esign-disclaimer">
+        By signing, I confirm the clinical decision recorded is accurate and made under my responsibility for this patient.
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="ghost-btn" (click)="esignModalOpen=false">Cancel</button>
+      <button class="save-btn" (click)="confirmEsign()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>Sign &amp; Submit
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<p-toast position="bottom-right"></p-toast>

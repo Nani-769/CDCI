@@ -1,0 +1,1084 @@
+<p-toast position="bottom-right"></p-toast>
+
+<div class="banner">
+  <div class="logo">Oncology EMR · NCG-KCDO</div>
+  <div class="pt-info">
+    <div class="pt-name">{{ patient.name }}</div>
+    <div class="pt-meta">{{ patient.gender }} · {{ patient.age }} · ASA {{ patient.asa }} · Ht {{ patient.ht }} · Wt {{ patient.wt }} · Blood {{ patient.blood }} · {{ patient.ward }}</div>
+  </div>
+  <div class="bchips">
+    <span class="bc bc-m">{{ patient.mrn }}</span>
+    <span class="bc bc-d">{{ patient.diagnosis }}</span>
+    <span class="bc bc-s">{{ form.pT || patient.tnm }}</span>
+    <span class="bc bc-p">{{ patient.stageGroup }}</span>
+  </div>
+  <button class="hamburger-btn" (click)="sidebarVisible = !sidebarVisible">
+    <i class="pi bars"></i>
+  </button>
+</div>
+
+<div class="mbar">
+  <div class="mp dim">💊 Medical Oncology</div>
+  <div class="mp dim">☢️ Radiation Oncology</div>
+  <div class="mp active">⚕ Surgical Oncology</div>
+  <div class="mp dim">⚗️ Hormonal Therapy</div>
+  <div class="mp dim">🩺 Pain Management</div>
+  <div class="mp dim">🫂 Palliative</div>
+  <div class="mp dim">📋 MDT</div>
+</div>
+
+<div class="layout">
+
+  <aside class="sidebar" [class.sidebar-open]="sidebarVisible">
+    <div class="sb-hd">
+      <div class="sb-title">Surgical Procedures</div>
+      <button class="hbtn">
+        <i class="pi pi-external-link" style="font-size:11px"></i>
+        Full OT Record — HIMS
+      </button>
+    </div>
+    <div class="proc-list">
+      <div *ngFor="let p of procedures; let i = index"
+           class="pi-item" [class.active]="activeProc === i"
+           (click)="selectProc(i); sidebarVisible = false">
+        <div class="pi-dt">{{ formatDate(p.date) }}</div>
+        <div class="pi-nm">{{ p.name }}</div>
+        <div class="pi-ch">
+          <span class="chip ct">{{ p.type }}</span>
+          <span class="chip cs">{{ p.unit || p.unitName }}</span>
+          <span *ngIf="p.caseStatus" class="chip" [class.cr]="p.caseStatus==='Emergency'" [class.ca]="p.caseStatus==='Elective'">{{ p.caseStatus }}</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding:8px 14px 6px">
+      <button class="abtn" (click)="openNewProcModal()">+ New Surgical Procedure</button>
+    </div>
+    <div class="sb-section">
+      <div class="sb-sec-title">Case Log (OT-H)</div>
+      <div *ngFor="let p of procedures" class="lb-row">
+        <span class="lb-date">{{ formatDate(p.date) }}</span>
+        <span class="lb-proc">{{ p.name }}</span>
+        <span class="rb" [class.r0]="p.caseStatus === 'Elective'" [class.r1]="p.caseStatus === 'Emergency'">{{ p.caseStatus || '—' }}</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-col">
+
+    <div class="infobar">
+      <div class="ib-proc">{{ form.name || '—' }}</div>
+      <div class="ib-sep">·</div>
+      <div class="ib-item"><div class="ib-lbl">Date</div><div class="ib-val">{{ formatDate(form.date) }}</div></div>
+      <div class="ib-sep">·</div>
+      <div class="ib-item"><div class="ib-lbl">Case No.</div><div class="ib-val">{{ form.caseNo || '—' }}</div></div>
+      <div class="ib-sep">·</div>
+      <div class="ib-item"><div class="ib-lbl">R-Status</div><div class="ib-val">{{ form.rStatus || '—' }}</div></div>
+      <div class="ib-sep">·</div>
+      <div class="ib-item"><div class="ib-lbl">Staging</div><div class="ib-val">{{ form.pT !== '—' ? form.pT : '—' }} {{ form.pN !== '—' ? form.pN : '' }} {{ form.pM !== '—' ? form.pM : '' }}</div></div>
+      <div class="ib-sep">·</div>
+      <div class="ib-item"><div class="ib-lbl">Intent</div><div class="ib-val" style="color:#86EFAC">{{ form.intent || '—' }}</div></div>
+      <div class="ib-sep">·</div>
+      <div class="ib-item"><div class="ib-lbl">OT Room</div><div class="ib-val">{{ form.otRoom || '—' }}</div></div>
+      <button class="btn btn-outline-light" style="margin-left:auto;font-size:11px;padding:4px 10px" >🔗 MDT</button>
+    </div>
+
+    <div class="pbw">
+      <div class="pbf" [style.width.%]="completionPct"></div>
+      <div class="pbl">{{ completionPct }}%</div>
+    </div>
+
+    <div class="toolbar">
+      <div class="spill">
+        <div class="sdot" [class.dok]="!isUnsaved" [class.dunsaved]="isUnsaved"></div>
+        <span>{{ isUnsaved ? 'Unsaved' : 'Saved' }}</span>
+      </div>
+      <div class="cwrap">
+        <div class="mbs">
+          <div *ngFor="let done of completionSections" class="mb" [class.done]="done"></div>
+        </div>
+        <span>{{ completedSectionsCount }}/5 complete</span>
+      </div>
+      <div class="mla">
+        <button class="btn btn-s" (click)="saveDraft()">💾 Draft</button>
+        <button class="btn btn-p" (click)="saveAll()">✓ Save &amp; Sign</button>
+        <button class="btn btn-d" (click)="clearForm()">✕ Clear</button>
+      </div>
+    </div>
+
+    <div class="val-banner" *ngIf="showValBanner">
+      <span>⚠️</span><span>{{ valMsg }}</span>
+    </div>
+
+    <div class="tabbar">
+      <button class="tb" [class.active]="activeTab==='t1'" (click)="switchTab('t1')">Procedure Overview <span class="tbn">1</span></button>
+      <button class="tb" [class.active]="activeTab==='t2'" (click)="switchTab('t2')">Operative Findings <span class="tbn">2</span></button>
+      <button class="tb" [class.active]="activeTab==='t3'" (click)="switchTab('t3')">Pathology Integration <span class="tbn">3</span></button>
+      <button class="tb" [class.active]="activeTab==='t4'" (click)="switchTab('t4')">Staging Consolidation <span class="tbn">4</span></button>
+      <button class="tb" [class.active]="activeTab==='t5'" (click)="switchTab('t5')">Wound &amp; Recovery <span class="tbn">5</span></button>
+      <button class="tb" [class.active]="activeTab==='t6'" (click)="switchTab('t6')">Reports <span class="tbn ot-i">OT-I</span></button>
+    </div>
+
+    <div class="tc">
+
+      <div *ngIf="activeTab === 't1'" class="tab-pane">
+
+        <div class="card" [class.editing]="cardEdit['t1a']">
+          <div class="chd">
+            <div class="cico">📋</div>
+            <span class="ctitle">Primary Details &amp; Procedure Identity</span>
+            <span class="ner">NER OT-A §1-27 · OT-D §1,§6</span>
+            <button class="edbtn" [class.on]="cardEdit['t1a']" (click)="toggleCard('t1a')">
+              {{ cardEdit['t1a'] ? '✓ Done' : '✏️ Edit' }}
+            </button>
+          </div>
+          <div class="cbd">
+
+            <div *ngIf="!cardEdit['t1a']">
+              <div class="view-row-top">
+                <div class="ctag"><span class="ctag-l">Case No.</span><span class="ctag-v">{{ form.caseNo || '—' }}</span></div>
+                <div><div class="fl">Type of Surgery</div>
+                  <div class="fv">
+                    <ng-container *ngIf="form.typeOfSurgery?.length; else noVal">
+                      <span *ngFor="let t of form.typeOfSurgery" class="chip ct" style="margin-right:4px">{{ t }}</span>
+                    </ng-container>
+                    <ng-template #noVal><span class="fv empty">—</span></ng-template>
+                  </div>
+                </div>
+              </div>
+              <div class="fg fg4" style="margin-top:10px">
+                <div><div class="fl">Date of Surgery</div><div class="fv mono">{{ formatDate(form.date) }}</div></div>
+                <div><div class="fl">OT Room No.</div><div class="fv mono">{{ form.otRoom || '—' }}</div></div>
+                <div><div class="fl">Ward / Bed</div><div class="fv">{{ form.ward || '—' }}</div></div>
+                <div><div class="fl">Unit Name</div><div class="fv">{{ form.unitName || '—' }}</div></div>
+                <div><div class="fl">Treating Doctor</div><div class="fv">{{ form.doctor || '—' }}</div></div>
+                <div><div class="fl">Surgeon at Booking</div><div class="fv">{{ form.bookSurgeon || '—' }}</div></div>
+                <div><div class="fl">Case Status</div><div class="fv">{{ form.caseStatus || '—' }}</div></div>
+                <div><div class="fl">Approach</div><div class="fv">{{ form.approach || '—' }}</div></div>
+                <div><div class="fl">Laterality</div><div class="fv hl">{{ form.laterality || '—' }}</div></div>
+                <div><div class="fl">Wound Class</div><div class="fv">{{ form.woundClass || '—' }}</div></div>
+                <div><div class="fl">Prophylactic Antibiotics</div><div class="fv">{{ form.propAb || '—' }}</div></div>
+                <div><div class="fl">Blood Group</div><div class="fv">{{ form.bloodGroup || '—' }}</div></div>
+                <div><div class="fl">Pre-Op Diagnosis</div><div class="fv">{{ form.preDiagnosis || '—' }}</div></div>
+                <div><div class="fl">Post-Op Diagnosis</div><div class="fv">{{ form.postDiagnosis || '—' }}</div></div>
+                <div><div class="fl">Insurance</div><div class="fv">{{ form.insurance || '—' }}</div></div>
+                <div><div class="fl">Viral Markers</div><div class="fv">{{ form.viralMarkers?.join(', ') || '—' }}</div></div>
+              </div>
+            </div>
+
+            <div *ngIf="cardEdit['t1a']">
+              <div class="fg fg4">
+                <div>
+                  <div class="fl">Case Number <span class="req">*</span></div>
+                  <input pInputText [(ngModel)]="form.caseNo" placeholder="OT-2024-XXXX" (ngModelChange)="isUnsaved = true;" [class.ng-invalid]="!form.caseNo" />
+                  <small class="p-error" *ngIf="!form.caseNo">Required</small>
+                </div>
+                <div style="grid-column: span 3">
+                  <div class="fl">Type of Surgery <span class="ner">OT-A §8</span></div>
+                  <div class="mcs">
+                    <span *ngFor="let t of ['Primary','Adjunct','Reconstructive']"
+                          class="mc" [class.on]="hasChip(form.typeOfSurgery, t)"
+                          (click)="toggleChip('typeOfSurgery', t)">{{ t }}</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="fl">Date of Surgery <span class="req">*</span></div>
+                  <input type="date" [(ngModel)]="form.date" (ngModelChange)="isUnsaved = true;" [class.ng-invalid]="!form.date" />
+                  <small class="p-error" *ngIf="!form.date">Required</small>
+                </div>
+                <div>
+                  <div class="fl">OT Room No. <span class="ner">OT-A §14</span></div>
+                  <input pInputText [(ngModel)]="form.otRoom" placeholder="e.g. OT-3" (ngModelChange)="isUnsaved = true;" />
+                </div>
+                <div>
+                  <div class="fl">Ward / Bed</div>
+                  <input pInputText [(ngModel)]="form.ward" placeholder="Ward 6B / Bed 4" (ngModelChange)="isUnsaved = true;" />
+                </div>
+                <div>
+                  <div class="fl">Unit Name</div>
+                  <input pInputText [(ngModel)]="form.unitName" placeholder="Surgical Oncology Unit 2" (ngModelChange)="isUnsaved = true;" />
+                </div>
+                <div>
+                  <div class="fl">Treating Doctor <span class="req">*</span></div>
+                  <input pInputText [(ngModel)]="form.doctor" placeholder="Dr. Name" (ngModelChange)="isUnsaved = true;" [class.ng-invalid]="!form.doctor" />
+                  <small class="p-error" *ngIf="!form.doctor">Required</small>
+                </div>
+                <div>
+                  <div class="fl">Surgeon at Booking <span class="ner">OT-A §15</span></div>
+                  <input pInputText [(ngModel)]="form.bookSurgeon" placeholder="Dr. Name" (ngModelChange)="isUnsaved = true;" />
+                </div>
+                <div>
+                  <div class="fl">Est. Duration <span class="ner">OT-A §12</span></div>
+                  <p-dropdown [options]="estDurOptions" [(ngModel)]="form.estDur" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                </div>
+                <div>
+                  <div class="fl">Case Status <span class="ner">OT-D 6E</span></div>
+                  <p-dropdown [options]="caseStatusOptions" [(ngModel)]="form.caseStatus" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                </div>
+                <div>
+                  <div class="fl">Approach <span class="ner">OT-A §11</span></div>
+                  <p-dropdown [options]="approachOptions" [(ngModel)]="form.approach" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                </div>
+                <div>
+                  <div class="fl">Laterality <span class="ner">OT-A §10</span></div>
+                  <p-dropdown [options]="lateralityOptions" [(ngModel)]="form.laterality" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                </div>
+                <div>
+                  <div class="fl">Skin Preparation <span class="ner">OT-D 6F</span></div>
+                  <input pInputText [(ngModel)]="form.skinPrep" placeholder="e.g. Betadine + Chlorhexidine" (ngModelChange)="isUnsaved = true;" />
+                </div>
+                <div>
+                  <div class="fl">Wound Class <span class="ner">OT-D 6G</span></div>
+                  <p-dropdown [options]="woundClassOptions" [(ngModel)]="form.woundClass" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                </div>
+                <div>
+                  <div class="fl">Prophylactic Antibiotics <span class="ner">OT-D 5C</span></div>
+                  <input pInputText [(ngModel)]="form.propAb" placeholder="e.g. Cefazolin 2g IV" (ngModelChange)="isUnsaved = true;" />
+                </div>
+                <div>
+                  <div class="fl">Insurance <span class="ner">OT-A §18-19</span></div>
+                  <p-dropdown [options]="insuranceOptions" [(ngModel)]="form.insurance" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                </div>
+                <div>
+                  <div class="fl">Blood Group <span class="ner">OT-A §23</span></div>
+                  <p-dropdown [options]="bloodGroupOptions" [(ngModel)]="form.bloodGroup" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                </div>
+              </div>
+              <div class="fg fg2" style="margin-top:12px">
+                <div>
+                  <div class="fl">Pre-Operative Diagnosis <span class="ner">OT-D 6D</span></div>
+                  <textarea pInputTextarea [(ngModel)]="form.preDiagnosis" rows="2" placeholder="e.g. Ca. Left Breast, IDC, cT2N1M0…" (ngModelChange)="isUnsaved = true;"></textarea>
+                </div>
+                <div>
+                  <div class="fl">Post-Operative Diagnosis <span class="ner">OT-D 6M</span></div>
+                  <textarea pInputTextarea [(ngModel)]="form.postDiagnosis" rows="2" placeholder="e.g. Ca. Left Breast, IDC Grade 2, pT2N2M0…" (ngModelChange)="isUnsaved = true;"></textarea>
+                </div>
+              </div>
+              <div class="dv"></div>
+              <div class="fg fg4">
+                <div>
+                  <div class="fl">Viral Markers <span class="ner">OT-A §17</span></div>
+                  <div class="mcs">
+                    <span *ngFor="let v of ['HBsAg','HCV','HIV','COVID']"
+                          class="mc" [class.on]="hasChip(form.viralMarkers, v)"
+                          (click)="toggleChip('viralMarkers', v)">{{ v }}</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="fl">Past Transfusions <span class="ner">OT-A §24</span></div>
+                  <div class="rg">
+                    <label *ngFor="let o of yesNoOptions" class="ro"
+                           [class.sel]="form.pastTransfusion === o.value"
+                           (click)="form.pastTransfusion = o.value; isUnsaved = true;">
+                      <div class="ck">{{ form.pastTransfusion === o.value ? '✓' : '' }}</div>{{ o.label }}
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <div class="fl">Transfusion Reactions <span class="ner">OT-A §25</span></div>
+                  <div class="rg">
+                    <label *ngFor="let o of yesNoOptions" class="ro"
+                           [class.sel]="form.transfReaction === o.value"
+                           (click)="form.transfReaction = o.value; isUnsaved = true;">
+                      <div class="ck">{{ form.transfReaction === o.value ? '✓' : '' }}</div>{{ o.label }}
+                    </label>
+                  </div>
+                </div>
+                <div *ngIf="form.transfReaction === 'Yes'">
+                  <div class="fl">Reaction Details <span class="ner">OT-A §26</span></div>
+                  <input pInputText [(ngModel)]="form.transfDetail" placeholder="Describe reaction details…" (ngModelChange)="isUnsaved = true;" />
+                </div>
+              </div>
+              <div style="margin-top:12px">
+                <div class="fl">Remarks (Equipment / Patient Position) <span class="ner">OT-A §27</span></div>
+                <input pInputText [(ngModel)]="form.remarks" placeholder="e.g. Patient in lateral decubitus; special instruments required…" (ngModelChange)="isUnsaved = true;" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="g2">
+
+          <div class="card" [class.editing]="cardEdit['t1b']">
+            <div class="chd">
+              <div class="cico">🎯</div>
+              <span class="ctitle">Intent, ASA &amp; Risk Classification</span>
+              <span class="ner">NER OT-D 7J · OT-A §20-22</span>
+              <button class="edbtn" [class.on]="cardEdit['t1b']" (click)="toggleCard('t1b')">{{ cardEdit['t1b'] ? '✓ Done' : '✏️ Edit' }}</button>
+            </div>
+            <div class="cbd">
+              <div *ngIf="!cardEdit['t1b']" class="fg fg2">
+                <div><div class="fl">Surgical Intent</div><div class="fv hl">{{ form.intent || '—' }}</div></div>
+                <div><div class="fl">ASA Status</div><div class="fv">{{ form.asa || '—' }}</div></div>
+                <div><div class="fl">High Risk MDT</div><div class="fv">{{ form.hrMDT || '—' }}</div></div>
+                <div><div class="fl">MDT Comments</div><div class="fv empty">{{ form.hrMDTComments || '—' }}</div></div>
+              </div>
+              <div *ngIf="cardEdit['t1b']">
+                <div class="fl" style="margin-bottom:6px">Surgical Intent <span class="req">*</span></div>
+                <div class="rg">
+                  <label *ngFor="let o of [{label:'Curative',value:'Curative'},{label:'Non-Curative',value:'Non-Curative'}]"
+                         class="ro" [class.sel]="form.intent === o.value"
+                         (click)="form.intent = o.value; isUnsaved = true;">
+                    <div class="ck">{{ form.intent === o.value ? '✓' : '' }}</div>{{ o.label }}
+                  </label>
+                </div>
+                <small class="p-error" *ngIf="!form.intent">Required</small>
+                <div class="fg fg2" style="margin-top:10px">
+                  <div>
+                    <div class="fl">ASA Status <span class="ner">OT-A §20</span></div>
+                    <p-dropdown [options]="asaOptions" [(ngModel)]="form.asa" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                  </div>
+                  <div>
+                    <div class="fl">High Risk MDT <span class="ner">OT-A §21</span></div>
+                    <p-dropdown [options]="hrMDTOptions" [(ngModel)]="form.hrMDT" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                  </div>
+                </div>
+                <div *ngIf="form.hrMDT === 'Yes'" style="margin-top:8px">
+                  <div class="fl">High Risk MDT Comments <span class="ner">OT-A §22</span></div>
+                  <textarea pInputTextarea [(ngModel)]="form.hrMDTComments" rows="2" placeholder="Comments from High Risk MDT discussion…" (ngModelChange)="isUnsaved = true;"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" [class.editing]="cardEdit['t1c']">
+            <div class="chd">
+              <div class="cico">⏱️</div>
+              <span class="ctitle">Duration &amp; Anaesthesia</span>
+              <span class="ner">NER OT-D §4</span>
+              <button class="edbtn" [class.on]="cardEdit['t1c']" (click)="toggleCard('t1c')">{{ cardEdit['t1c'] ? '✓ Done' : '✏️ Edit' }}</button>
+            </div>
+            <div class="cbd">
+              <div *ngIf="!cardEdit['t1c']" class="fg fg3">
+                <div><div class="fl">Op Start</div><div class="fv mono">{{ form.opStart || '—' }}</div></div>
+                <div><div class="fl">Op End</div><div class="fv mono">{{ form.opEnd || '—' }}</div></div>
+                <div><div class="fl">Duration</div><div class="fv mono hl">{{ opDuration }}</div></div>
+                <div><div class="fl">Type</div><div class="fv">{{ form.anaType || '—' }}</div></div>
+                <div><div class="fl">Anaes. Start</div><div class="fv mono">{{ form.anaStart || '—' }}</div></div>
+                <div><div class="fl">Anaes. End</div><div class="fv mono">{{ form.anaEnd || '—' }}</div></div>
+              </div>
+              <div *ngIf="cardEdit['t1c']">
+                <div class="fg fg3">
+                  <div>
+                    <div class="fl">Op Start Date</div>
+                    <input type="date" [(ngModel)]="form.opStartDate" (ngModelChange)="isUnsaved = true;" />
+                  </div>
+                  <div>
+                    <div class="fl">Op Start Time <span class="req">*</span></div>
+                    <input type="time" [(ngModel)]="form.opStart" (ngModelChange)="isUnsaved = true;" />
+                  </div>
+                  <div>
+                    <div class="fl">Op End Date</div>
+                    <input type="date" [(ngModel)]="form.opEndDate" (ngModelChange)="isUnsaved = true;" />
+                  </div>
+                  <div>
+                    <div class="fl">Op End Time <span class="req">*</span></div>
+                    <input type="time" [(ngModel)]="form.opEnd" (ngModelChange)="isUnsaved = true;" />
+                  </div>
+                  <div>
+                    <div class="fl">Duration (auto)</div>
+                    <div class="fv mono hl" style="padding:7px 0">{{ opDuration }}</div>
+                  </div>
+                  <div></div>
+                  <div>
+                    <div class="fl">Anaes. Start Date</div>
+                    <input type="date" [(ngModel)]="form.anaStartDate" (ngModelChange)="isUnsaved = true;" />
+                  </div>
+                  <div>
+                    <div class="fl">Anaes. Start Time</div>
+                    <input type="time" [(ngModel)]="form.anaStart" (ngModelChange)="isUnsaved = true;" />
+                  </div>
+                  <div>
+                    <div class="fl">Anaes. End Date</div>
+                    <input type="date" [(ngModel)]="form.anaEndDate" (ngModelChange)="isUnsaved = true;" />
+                  </div>
+                  <div>
+                    <div class="fl">Anaes. End Time</div>
+                    <input type="time" [(ngModel)]="form.anaEnd" (ngModelChange)="isUnsaved = true;" />
+                  </div>
+                  <div>
+                    <div class="fl">Type of Anaes. <span class="ner">OT-D 4C</span></div>
+                    <p-dropdown [options]="anaTypeOptions" [(ngModel)]="form.anaType" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" [class.editing]="cardEdit['t1d']" style="margin-top:14px">
+          <div class="chd">
+            <div class="cico">📊</div>
+            <span class="ctitle">Operation Proposed vs. Performed</span>
+            <span class="ner">NER OT-D §5 · §6A-D</span>
+            <button class="edbtn" [class.on]="cardEdit['t1d']" (click)="toggleCard('t1d')">{{ cardEdit['t1d'] ? '✓ Done' : '✏️ Edit' }}</button>
+          </div>
+          <div class="cbd">
+            <div *ngIf="!cardEdit['t1d']">
+              <div class="cmp">
+                <div class="cmpc">
+                  <div class="cmphd">⬜ Proposed</div>
+                  <div style="font-size:12px;color:var(--s6);white-space:pre-line">{{ form.proposed || '—' }}</div>
+                </div>
+                <div class="cmpc">
+                  <div class="cmphd">✅ Performed</div>
+                  <table class="op-tbl" *ngIf="form.opRows?.length">
+                    <thead><tr><th>Type</th><th>Procedure</th><th>Laterality</th></tr></thead>
+                    <tbody>
+                      <tr *ngFor="let r of form.opRows" [style.display]="(r.type || r.proc) ? '' : 'none'">
+                        <td>{{ r.type }}</td><td>{{ r.proc }}</td><td>{{ r.lat }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div *ngIf="form.deviation" class="devb" style="margin-top:10px">⚠️ {{ form.deviation }}</div>
+              <div class="fg fg2" style="margin-top:10px">
+                <div *ngIf="form.incision"><div class="fl">Incision / Sutures</div><div class="fv" style="font-size:12px">{{ form.incision }}</div></div>
+                <div *ngIf="form.pathMat"><div class="fl">Materials to Pathology</div><div class="fv" style="font-size:12px">{{ form.pathMat }}</div></div>
+              </div>
+            </div>
+            <div *ngIf="cardEdit['t1d']">
+              <div>
+                <div class="fl">Operation Proposed <span class="ner">OT-D 5B</span></div>
+                <textarea pInputTextarea [(ngModel)]="form.proposed" rows="2" placeholder="Procedure name (one per line)" (ngModelChange)="isUnsaved = true;"></textarea>
+              </div>
+              <div style="margin-top:12px">
+                <div class="fl">Operation Performed <span class="ner">OT-D 6A</span></div>
+                <table class="op-tbl" style="margin-top:6px">
+                  <thead><tr><th>Type of Surgery</th><th>Name of Procedure</th><th>Laterality</th></tr></thead>
+                  <tbody>
+                    <tr *ngFor="let row of form.opRows; let i = index">
+                      <td><p-dropdown [options]="opTypeOptions" [(ngModel)]="row.type" (ngModelChange)="isUnsaved = true;" [style]="{'min-width':'110px','width':'100%'}" appendTo="body"></p-dropdown></td>
+                      <td><input pInputText [(ngModel)]="row.proc" placeholder="e.g. Modified Radical Mastectomy" (ngModelChange)="isUnsaved = true;" style="width:100%" /></td>
+                      <td><p-dropdown [options]="opLatOptions" [(ngModel)]="row.lat" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="fg fg2" style="margin-top:12px">
+                <div>
+                  <div class="fl">Incision / Sutures <span class="ner">OT-D 6I</span></div>
+                  <textarea pInputTextarea [(ngModel)]="form.incision" rows="2" placeholder="Incision type, ligatures, closure technique…" (ngModelChange)="isUnsaved = true;"></textarea>
+                </div>
+                <div>
+                  <div class="fl">Materials to Pathology <span class="ner">OT-D 6L</span></div>
+                  <textarea pInputTextarea [(ngModel)]="form.pathMat" rows="2" placeholder="Specimen types forwarded for examination…" (ngModelChange)="isUnsaved = true;"></textarea>
+                </div>
+              </div>
+              <div style="margin-top:10px">
+                <div class="fl">Deviation / Intraoperative Remark</div>
+                <textarea pInputTextarea [(ngModel)]="form.deviation" rows="2" placeholder="Describe any deviation from planned procedure…" (ngModelChange)="isUnsaved = true;"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" [class.editing]="cardEdit['t1e']" style="margin-top:14px">
+          <div class="chd">
+            <div class="cico">👥</div>
+            <span class="ctitle">Surgical, Reconstruction &amp; Nursing Team</span>
+            <span class="ner">NER OT-D §2,§3</span>
+            <button class="edbtn" [class.on]="cardEdit['t1e']" (click)="toggleCard('t1e')">{{ cardEdit['t1e'] ? '✓ Done' : '✏️ Edit' }}</button>
+          </div>
+          <div class="cbd">
+            <div *ngIf="!cardEdit['t1e']">
+              <div class="g3">
+                <div>
+                  <div class="sh">Surgery Team</div>
+                  <div class="team">
+                    <ng-container *ngFor="let m of [['PS',form.ps],['A1',form.as1],['A2',form.as2],['A3',form.as3],['PA',form.pa],['An1',form.an1],['An2',form.an2]]">
+                      <div *ngIf="m[1]" class="tcard">
+                        <div class="tav">{{ getInitials(m[1]) }}</div>
+                        <div><div class="tnm2">{{ m[1] }}</div><div class="trl">{{ m[0] }}</div></div>
+                      </div>
+                    </ng-container>
+                  </div>
+                </div>
+                <div>
+                  <div class="sh">Reconstruction Team</div>
+                  <div class="team">
+                    <ng-container *ngFor="let m of [['RPS',form.reconPs],['RA1',form.reconAs1],['RA2',form.reconAs2],['RA3',form.reconAs3]]">
+                      <div *ngIf="m[1] && m[1] !== 'N/A'" class="tcard">
+                        <div class="tav">{{ getInitials(m[1]) }}</div>
+                        <div><div class="tnm2">{{ m[1] }}</div><div class="trl">{{ m[0] }}</div></div>
+                      </div>
+                    </ng-container>
+                    <span *ngIf="!form.reconPs || form.reconPs === 'N/A'" class="fv empty">N/A</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="sh">Nursing Team</div>
+                  <div class="team">
+                    <ng-container *ngFor="let m of [['SN1',form.sn1],['SN2',form.sn2]]">
+                      <div *ngIf="m[1]" class="tcard">
+                        <div class="tav">{{ getInitials(m[1]) }}</div>
+                        <div><div class="tnm2">{{ m[1] }}</div><div class="trl">{{ m[0] }}</div></div>
+                      </div>
+                    </ng-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="cardEdit['t1e']">
+              <div class="g3">
+                <div>
+                  <div class="sh">Surgery Team</div>
+                  <div class="fg" style="gap:7px">
+                    <div><div class="fl">Primary Surgeon</div><input pInputText [(ngModel)]="form.ps" placeholder="Dr. Name" (ngModelChange)="isUnsaved = true;" /></div>
+                    <div><div class="fl">Asst. Surgeon 1</div><input pInputText [(ngModel)]="form.as1" placeholder="Dr. Name" (ngModelChange)="isUnsaved = true;" /></div>
+                    <div><div class="fl">Asst. Surgeon 2</div><input pInputText [(ngModel)]="form.as2" placeholder="Dr. Name" (ngModelChange)="isUnsaved = true;" /></div>
+                    <div><div class="fl">Asst. Surgeon 3</div><input pInputText [(ngModel)]="form.as3" placeholder="Dr. Name" (ngModelChange)="isUnsaved = true;" /></div>
+                    <div><div class="fl">Primary Anaesthetist</div><input pInputText [(ngModel)]="form.pa" placeholder="Dr. Name" (ngModelChange)="isUnsaved = true;" /></div>
+                    <div><div class="fl">Anaesthetist 1</div><input pInputText [(ngModel)]="form.an1" placeholder="Dr. Name" (ngModelChange)="isUnsaved = true;" /></div>
+                    <div><div class="fl">Anaesthetist 2</div><input pInputText [(ngModel)]="form.an2" placeholder="Dr. Name" (ngModelChange)="isUnsaved = true;" /></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="sh">Reconstruction Team</div>
+                  <div class="fg" style="gap:7px">
+                    <div><div class="fl">Recon Primary Surgeon</div><input pInputText [(ngModel)]="form.reconPs" placeholder="Dr. Name or N/A" (ngModelChange)="isUnsaved = true;" /></div>
+                    <div><div class="fl">Recon Asst. Surgeon 1</div><input pInputText [(ngModel)]="form.reconAs1" placeholder="Dr. Name or N/A" (ngModelChange)="isUnsaved = true;" /></div>
+                    <div><div class="fl">Recon Asst. Surgeon 2</div><input pInputText [(ngModel)]="form.reconAs2" placeholder="Dr. Name or N/A" (ngModelChange)="isUnsaved = true;" /></div>
+                    <div><div class="fl">Recon Asst. Surgeon 3</div><input pInputText [(ngModel)]="form.reconAs3" placeholder="Dr. Name or N/A" (ngModelChange)="isUnsaved = true;" /></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="sh">Nursing Team</div>
+                  <div class="fg" style="gap:7px">
+                    <div><div class="fl">Scrub Nurse 1</div><input pInputText [(ngModel)]="form.sn1" placeholder="Sr. Name" (ngModelChange)="isUnsaved = true;" /></div>
+                    <div><div class="fl">Scrub Nurse 2</div><input pInputText [(ngModel)]="form.sn2" placeholder="Sr. Name" (ngModelChange)="isUnsaved = true;" /></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><div *ngIf="activeTab === 't2'" class="tab-pane">
+
+        <div class="card" [class.editing]="cardEdit['t2a']">
+          <div class="chd"><div class="cico">🔬</div><span class="ctitle">Intraoperative Staging — Surgical TNM</span><span class="ner">NER OT-D 7B,7O,7P</span>
+            <button class="edbtn" [class.on]="cardEdit['t2a']" (click)="toggleCard('t2a')">{{ cardEdit['t2a'] ? '✓ Done' : '✏️ Edit' }}</button>
+          </div>
+          <div class="cbd">
+            <div *ngIf="!cardEdit['t2a']" style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+              <div><div class="sh" style="margin-top:0">Surgical pTNM</div>
+                <div class="tnmr">
+                  <div class="tnmc"><div class="tnmk">pT</div><div class="tnmv">{{ form.pT || '—' }}</div><div class="tnmsb">tumour</div></div>
+                  <div class="tnmc"><div class="tnmk">pN</div><div class="tnmv">{{ form.pN || '—' }}</div><div class="tnmsb">nodal</div></div>
+                  <div class="tnmc"><div class="tnmk">pM</div><div class="tnmv">{{ form.pM || '—' }}</div><div class="tnmsb">distant</div></div>
+                </div>
+              </div>
+              <div><div class="sh" style="margin-top:0">Tumour Details</div>
+                <div class="fg fg2"><div><div class="fl">Size</div><div class="fv mono hl">{{ form.tumSize || '—' }}</div></div><div><div class="fl">Location</div><div class="fv">{{ form.tumLoc || '—' }}</div></div></div>
+              </div>
+            </div>
+            <div *ngIf="cardEdit['t2a']">
+              <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+                <div><div class="sh" style="margin-top:0">pTNM <span class="req">*</span></div>
+                  <div class="tnmr">
+                    <div class="tnmc"><div class="tnmk">pT</div>
+                      <select class="tnmsel" [(ngModel)]="form.pT" (ngModelChange)="isUnsaved = true;">
+                        <option *ngFor="let o of pTOptions" [value]="o">{{ o }}</option>
+                      </select>
+                    </div>
+                    <div class="tnmc"><div class="tnmk">pN</div>
+                      <select class="tnmsel" [(ngModel)]="form.pN" (ngModelChange)="isUnsaved = true;">
+                        <option *ngFor="let o of pNOptions" [value]="o">{{ o }}</option>
+                      </select>
+                    </div>
+                    <div class="tnmc"><div class="tnmk">pM</div>
+                      <select class="tnmsel" [(ngModel)]="form.pM" (ngModelChange)="isUnsaved = true;">
+                        <option *ngFor="let o of pMOptions" [value]="o">{{ o }}</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="fg fg2">
+                <div><div class="fl">Tumour Size (cm)</div><input pInputText [(ngModel)]="form.tumSize" placeholder="e.g. 3.2 cm" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">Tumour Location</div><input pInputText [(ngModel)]="form.tumLoc" placeholder="e.g. Upper outer quadrant" (ngModelChange)="isUnsaved = true;" /></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="g2">
+          <div class="card" [class.editing]="cardEdit['t2b']">
+            <div class="chd"><div class="cico">🔴</div><span class="ctitle">R-Status (Resection Margins)</span><span class="ner">NER OT-D 7C</span>
+              <button class="edbtn" [class.on]="cardEdit['t2b']" (click)="toggleCard('t2b')">{{ cardEdit['t2b'] ? '✓ Done' : '✏️ Edit' }}</button>
+            </div>
+            <div class="cbd">
+              <div *ngIf="!cardEdit['t2b']">
+                <div [class]="getRStatusClass(form.rStatus)" style="font-size:22px;padding:6px 16px;border-radius:8px;display:inline-block;font-weight:700">{{ form.rStatus || '—' }}</div>
+                <div *ngIf="form.rStatus" class="al" [class.al-g]="form.rStatus==='R0'" [class.al-a]="form.rStatus==='R1'" [class.al-r]="form.rStatus==='R2'" style="margin-top:8px">
+                  {{ form.rStatus === 'R0' ? '✅ Clear margins' : form.rStatus === 'R1' ? '⚠️ Microscopically involved' : '🔴 Macroscopically involved' }}
+                </div>
+              </div>
+              <div *ngIf="cardEdit['t2b']">
+                <div class="fl" style="margin-bottom:8px">R-Status <span class="req">*</span></div>
+                <div class="rg">
+                  <label *ngFor="let o of rStatusOptions" class="ro" [class.sel]="form.rStatus === o.value"
+                         (click)="form.rStatus = o.value; isUnsaved = true;">
+                    <div class="ck">{{ form.rStatus === o.value ? '✓' : '' }}</div>{{ o.label }}
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" [class.editing]="cardEdit['t2e']">
+            <div class="chd"><div class="cico">🩸</div><span class="ctitle">Blood Loss &amp; Blood Products</span><span class="ner">NER OT-D 7G,7H</span>
+              <button class="edbtn" [class.on]="cardEdit['t2e']" (click)="toggleCard('t2e')">{{ cardEdit['t2e'] ? '✓ Done' : '✏️ Edit' }}</button>
+            </div>
+            <div class="cbd">
+              <div *ngIf="!cardEdit['t2e']" class="fg fg2">
+                <div><div class="fl">EBL (ml)</div><div class="fv mono red">{{ form.ebl || '—' }}</div></div>
+                <div><div class="fl">Blood Volume (ml)</div><div class="fv mono">{{ form.bloodVol || '—' }}</div></div>
+                <div><div class="fl">Blood Products</div>
+                  <div class="bps">
+                    <span *ngFor="let b of form.bloodProds" class="bp">{{ b }}</span>
+                    <span *ngIf="!form.bloodProds?.length" class="fv empty">None</span>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="cardEdit['t2e']">
+                <div class="fg fg2">
+                  <div><div class="fl">EBL (ml) <span class="ner">OT-D 7G</span></div><input type="number" [(ngModel)]="form.ebl" placeholder="e.g. 280" (ngModelChange)="isUnsaved = true;" /></div>
+                  <div><div class="fl">Blood Volume (ml)</div><input type="number" [(ngModel)]="form.bloodVol" placeholder="e.g. 4200" (ngModelChange)="isUnsaved = true;" /></div>
+                </div>
+                <div style="margin-top:8px"><div class="fl">Blood Products Used <span class="ner">OT-D 7H</span></div>
+                  <div class="mcs">
+                    <span *ngFor="let b of ['PRBC','FFP','Platelets','Cryo','None']"
+                          class="mc" [class.on]="hasChip(form.bloodProds, b)"
+                          (click)="toggleChip('bloodProds', b)">{{ b }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" [class.editing]="cardEdit['t2g']" style="margin-top:14px">
+          <div class="chd"><div class="cico">📝</div><span class="ctitle">Operative Findings &amp; Drains</span><span class="ner">NER OT-D 7A · OT-D 7I</span>
+            <button class="edbtn" [class.on]="cardEdit['t2g']" (click)="toggleCard('t2g')">{{ cardEdit['t2g'] ? '✓ Done' : '✏️ Edit' }}</button>
+          </div>
+          <div class="cbd">
+            <div *ngIf="!cardEdit['t2g']">
+              <div class="hn">{{ form.findings || '—' }}</div>
+              <div class="fg fg2" style="margin-top:10px">
+                <div><div class="fl">Post-Op Antibiotics</div><div class="fv">{{ form.postAb || '—' }}</div></div>
+              </div>
+              <div class="fg fg2" style="margin-top:8px">
+                <div><div class="fl">Drain 1</div><div class="fv">{{ form.d1type || '—' }} <span *ngIf="form.d1loc">— {{ form.d1loc }}</span></div></div>
+                <div><div class="fl">Drain 2</div><div class="fv">{{ form.d2type || '—' }} <span *ngIf="form.d2loc">— {{ form.d2loc }}</span></div></div>
+              </div>
+            </div>
+            <div *ngIf="cardEdit['t2g']">
+              <div><div class="fl">Operative Findings <span class="ner">OT-D 7A</span></div>
+                <textarea pInputTextarea [(ngModel)]="form.findings" rows="4" placeholder="Describe intraoperative findings…" (ngModelChange)="isUnsaved = true;"></textarea>
+              </div>
+              <div style="margin-top:10px"><div class="fl">Post-Op Antibiotics</div>
+                <input pInputText [(ngModel)]="form.postAb" placeholder="e.g. Amoxicillin-Clavulanate 625mg BD x 5 days" (ngModelChange)="isUnsaved = true;" />
+              </div>
+              <div class="fg fg4" style="margin-top:10px">
+                <div><div class="fl">Drain 1 Type</div><input pInputText [(ngModel)]="form.d1type" placeholder="e.g. Redivac" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">Drain 1 Location</div><input pInputText [(ngModel)]="form.d1loc" placeholder="e.g. Axilla" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">Drain 2 Type</div><input pInputText [(ngModel)]="form.d2type" placeholder="e.g. Redivac" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">Drain 2 Location</div><input pInputText [(ngModel)]="form.d2loc" placeholder="e.g. Chest wall flap" (ngModelChange)="isUnsaved = true;" /></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><div *ngIf="activeTab === 't3'" class="tab-pane">
+        <div class="card" [class.editing]="cardEdit['t3a']">
+          <div class="chd"><div class="cico">🧬</div><span class="ctitle">Histopathology &amp; Receptor Status</span><span class="ner">NER OT-E §1-12</span>
+            <button class="edbtn" [class.on]="cardEdit['t3a']" (click)="toggleCard('t3a')">{{ cardEdit['t3a'] ? '✓ Done' : '✏️ Edit' }}</button>
+          </div>
+          <div class="cbd">
+            <div *ngIf="!cardEdit['t3a']">
+              <div class="fg fg4">
+                <div><div class="fl">Specimen Site</div><div class="fv">{{ form.specSite || '—' }}</div></div>
+                <div><div class="fl">Specimen Type</div><div class="fv">{{ form.specType || '—' }}</div></div>
+                <div><div class="fl">Specimen Size</div><div class="fv mono">{{ form.specSize || '—' }}</div></div>
+                <div><div class="fl">Histological Type</div><div class="fv">{{ form.histoType || '—' }}</div></div>
+                <div><div class="fl">Grade</div><div class="fv">{{ form.grade || '—' }}</div></div>
+                <div><div class="fl">LVI</div><div class="fv" [class.red]="form.lvi === 'Present'" [class.grn]="form.lvi === 'Absent'">{{ form.lvi || '—' }}</div></div>
+                <div><div class="fl">PNI</div><div class="fv" [class.red]="form.pni === 'Present'" [class.grn]="form.pni === 'Absent'">{{ form.pni || '—' }}</div></div>
+                <div><div class="fl">Necrosis %</div><div class="fv mono">{{ form.necrosis || '—' }}</div></div>
+              </div>
+              <div class="dv"></div>
+              <div class="sh">Receptor Status</div>
+              <div class="fg fg4">
+                <div><div class="fl">ER</div><div class="fv" [class.grn]="form.er">{{ form.er || '—' }}</div></div>
+                <div><div class="fl">PR</div><div class="fv" [class.grn]="form.pr">{{ form.pr || '—' }}</div></div>
+                <div><div class="fl">HER2</div><div class="fv">{{ form.her2 || '—' }}</div></div>
+                <div><div class="fl">Ki67 %</div><div class="fv mono amb">{{ form.ki67 ? form.ki67 + '%' : '—' }}</div></div>
+              </div>
+            </div>
+            <div *ngIf="cardEdit['t3a']">
+              <div class="fg fg4">
+                <div><div class="fl">Specimen Site</div><input pInputText [(ngModel)]="form.specSite" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">Specimen Type</div><input pInputText [(ngModel)]="form.specType" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">Specimen Size</div><input pInputText [(ngModel)]="form.specSize" placeholder="e.g. 18x14x5 cm" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">Histological Type</div><input pInputText [(ngModel)]="form.histoType" (ngModelChange)="isUnsaved = true;" /></div>
+                <div>
+                  <div class="fl">Grade</div>
+                  <p-dropdown [options]="gradeOptions" [(ngModel)]="form.grade" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                </div>
+                <div>
+                  <div class="fl">LVI</div>
+                  <div class="rg">
+                    <label *ngFor="let o of lviOptions" class="ro" [class.sel]="form.lvi === o.value" (click)="form.lvi = o.value; isUnsaved = true;">
+                      <div class="ck">{{ form.lvi === o.value ? '✓' : '' }}</div>{{ o.label }}
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <div class="fl">PNI</div>
+                  <div class="rg">
+                    <label *ngFor="let o of [{label:'Present',value:'Present'},{label:'Absent',value:'Absent'}]" class="ro" [class.sel]="form.pni === o.value" (click)="form.pni = o.value; isUnsaved = true;">
+                      <div class="ck">{{ form.pni === o.value ? '✓' : '' }}</div>{{ o.label }}
+                    </label>
+                  </div>
+                </div>
+                <div><div class="fl">Necrosis %</div><input type="number" [(ngModel)]="form.necrosis" placeholder="e.g. 10" (ngModelChange)="isUnsaved = true;" /></div>
+              </div>
+              <div class="dv"></div>
+              <div class="sh">Receptor Status</div>
+              <div class="fg fg4">
+                <div><div class="fl">ER</div><input pInputText [(ngModel)]="form.er" placeholder="e.g. 90% (3+)" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">PR</div><input pInputText [(ngModel)]="form.pr" placeholder="e.g. 70% (2+)" (ngModelChange)="isUnsaved = true;" /></div>
+                <div>
+                  <div class="fl">HER2</div>
+                  <p-dropdown [options]="her2Options" [(ngModel)]="form.her2" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                </div>
+                <div><div class="fl">Ki67 %</div><input type="number" [(ngModel)]="form.ki67" placeholder="e.g. 28" (ngModelChange)="isUnsaved = true;" /></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" [class.editing]="cardEdit['t3b']" style="margin-top:14px">
+          <div class="chd"><div class="cico">🔵</div><span class="ctitle">Nodal Status</span><span class="ner">NER OT-E §13-16</span>
+            <button class="edbtn" [class.on]="cardEdit['t3b']" (click)="toggleCard('t3b')">{{ cardEdit['t3b'] ? '✓ Done' : '✏️ Edit' }}</button>
+          </div>
+          <div class="cbd">
+            <div *ngIf="!cardEdit['t3b']">
+              <div class="nf">
+                <span class="nfn">{{ form.nodesPos || '—' }}</span>
+                <span class="nfs">/</span>
+                <span class="nfd">{{ form.nodesTotal || '—' }}</span>
+              </div>
+              <div style="font-size:11px;color:var(--s4);margin-top:3px">{{ nodalFraction }}</div>
+              <div class="fg fg2" style="margin-top:8px">
+                <div><div class="fl">SNB Examined</div><div class="fv">{{ form.snbEx || '—' }}</div></div>
+                <div><div class="fl">SNB Status</div><div class="fv">{{ form.snbStatus || '—' }}</div></div>
+              </div>
+            </div>
+            <div *ngIf="cardEdit['t3b']">
+              <div class="fg fg2">
+                <div><div class="fl">Positive Nodes <span class="ner">OT-E §13</span></div><input type="number" [(ngModel)]="form.nodesPos" placeholder="e.g. 4" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">Total Nodes <span class="ner">OT-E §14</span></div><input type="number" [(ngModel)]="form.nodesTotal" placeholder="e.g. 16" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">SNB Examined <span class="ner">OT-E §15</span></div><input pInputText [(ngModel)]="form.snbEx" (ngModelChange)="isUnsaved = true;" /></div>
+                <div><div class="fl">SNB Status <span class="ner">OT-E §16</span></div><input pInputText [(ngModel)]="form.snbStatus" (ngModelChange)="isUnsaved = true;" /></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><div *ngIf="activeTab === 't4'" class="tab-pane">
+        <div class="g2">
+          <div class="card" [class.editing]="cardEdit['t4a']">
+            <div class="chd"><div class="cico">🏷️</div><span class="ctitle">Pathological Stage Group (AJCC 8th)</span>
+              <button class="edbtn" [class.on]="cardEdit['t4a']" (click)="toggleCard('t4a')">{{ cardEdit['t4a'] ? '✓ Done' : '✏️ Edit' }}</button>
+            </div>
+            <div class="cbd">
+              <div *ngIf="!cardEdit['t4a']" style="display:flex;align-items:center;gap:14px">
+                <div [class]="getStageClass(form.ajccStage)">{{ form.ajccStage || '—' }}</div>
+                <div><div class="fv">{{ form.ajccStage || '—' }}</div><div style="font-size:11px;color:var(--s4);margin-top:3px">{{ form.stgDetail || '' }}</div></div>
+              </div>
+              <div *ngIf="cardEdit['t4a']" class="fg fg2">
+                <div>
+                  <div class="fl">AJCC 8th Stage Group <span class="req">*</span></div>
+                  <p-dropdown [options]="ajccStageOptions" [(ngModel)]="form.ajccStage" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown>
+                </div>
+                <div>
+                  <div class="fl">Notes (ER/PR/HER2/Ki67)</div>
+                  <input pInputText [(ngModel)]="form.stgDetail" placeholder="e.g. ER+ PR+ HER2− Ki67 30%" (ngModelChange)="isUnsaved = true;" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" [class.editing]="cardEdit['t4b']">
+            <div class="chd"><div class="cico">🎯</div><span class="ctitle">Residual Disease &amp; Surgical Goal</span>
+              <button class="edbtn" [class.on]="cardEdit['t4b']" (click)="toggleCard('t4b')">{{ cardEdit['t4b'] ? '✓ Done' : '✏️ Edit' }}</button>
+            </div>
+            <div class="cbd">
+              <div *ngIf="!cardEdit['t4b']" class="fg fg2">
+                <div><div class="fl">Final Residual Disease</div><div class="fv">{{ form.finalR || '—' }}</div></div>
+                <div><div class="fl">Intent Achieved</div><div class="fv" [class.grn]="form.intentAch==='Yes'" [class.red]="form.intentAch==='No'">{{ form.intentAch || '—' }}</div></div>
+              </div>
+              <div *ngIf="cardEdit['t4b']">
+                <div class="fl" style="margin-bottom:6px">Final Residual Disease</div>
+                <div class="rg">
+                  <label *ngFor="let o of [{label:'R0',value:'R0'},{label:'R1',value:'R1'},{label:'R2',value:'R2'}]"
+                         class="ro" [class.sel]="form.finalR === o.value" (click)="form.finalR = o.value; isUnsaved = true;">
+                    <div class="ck">{{ form.finalR === o.value ? '✓' : '' }}</div>{{ o.label }}
+                  </label>
+                </div>
+                <div class="fl" style="margin-top:10px;margin-bottom:6px">Intent Achieved</div>
+                <div class="rg">
+                  <label *ngFor="let o of [{label:'Yes',value:'Yes'},{label:'No',value:'No'},{label:'Partial',value:'Partial'}]"
+                         class="ro" [class.sel]="form.intentAch === o.value" (click)="form.intentAch = o.value; isUnsaved = true;">
+                    <div class="ck">{{ form.intentAch === o.value ? '✓' : '' }}</div>{{ o.label }}
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" [class.editing]="cardEdit['t4c']" style="margin-top:14px">
+          <div class="chd"><div class="cico">🏥</div><span class="ctitle">Recommended Adjuvant Discussion → MDT Agenda</span>
+            <button class="edbtn" [class.on]="cardEdit['t4c']" (click)="toggleCard('t4c')">{{ cardEdit['t4c'] ? '✓ Done' : '✏️ Edit' }}</button>
+          </div>
+          <div class="cbd">
+            <div *ngIf="!cardEdit['t4c']" class="fv">
+              <span *ngIf="form.adjuvant?.length; else noAdj">{{ form.adjuvant.join(' · ') }}</span>
+              <ng-template #noAdj><span class="fv empty">—</span></ng-template>
+            </div>
+            <div *ngIf="cardEdit['t4c']">
+              <div class="al al-t" style="margin-bottom:10px;margin-top:0">📋 Selections feed into MDT agenda. No prescribing here.</div>
+              <div class="adjl">
+                <div *ngFor="let item of adjuvantItems" class="aji" [class.on]="isAdjuvantOn(item)" (click)="toggleAdjuvant(item)">
+                  <div class="ajb">{{ isAdjuvantOn(item) ? '✓' : '' }}</div>{{ item }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><div *ngIf="activeTab === 't5'" class="tab-pane">
+
+        <div class="card" [class.editing]="cardEdit['t5a']">
+          <div class="chd"><div class="cico">⚡</div><span class="ctitle">Post-Operative Complications</span><span class="ner">NER OT-F · Clavien-Dindo</span>
+            <button class="edbtn" [class.on]="cardEdit['t5a']" (click)="toggleCard('t5a')">{{ cardEdit['t5a'] ? '✓ Done' : '✏️ Edit' }}</button>
+          </div>
+          <div class="cbd">
+            <div *ngIf="!cardEdit['t5a']">
+              <div class="g2">
+                <div class="fg fg1" style="gap:8px">
+                  <div><div class="fl">Post-Op Complications</div><div class="fv">{{ form.postCompl || '—' }}</div></div>
+                  <div><div class="fl">Complication(s)</div><div class="fv">{{ form.postComplList?.join(', ') || '—' }}</div></div>
+                  <div>
+                    <div class="fl">Clavien-Dindo Grade</div>
+                    <div *ngFor="let r of cdRows" style="margin-bottom:6px">
+                      <span class="chip cr">{{ r.grade }}</span> {{ r.compl }} — {{ r.desc }}
+                    </div>
+                    </div>
+                </div>
+                <div>
+                  <div class="sh" style="margin-top:0">Outcome Metrics <span class="ner">OT-F F–I</span></div>
+                  <div class="og">
+                    <div class="oc"><div class="ocl">30-Day Re-Admission</div><div class="ocv" [class.ocno]="form.readm30==='No'" [class.ocyes]="form.readm30==='Yes'">{{ form.readm30 || '—' }}</div></div>
+                    <div class="oc"><div class="ocl">30-Day Mortality</div><div class="ocv" [class.ocno]="form.mort30==='No'" [class.ocyes]="form.mort30==='Yes'">{{ form.mort30 || '—' }}</div></div>
+                    <div class="oc"><div class="ocl">90-Day Re-Admission</div><div class="ocv" [class.ocno]="form.readm90==='No'" [class.ocyes]="form.readm90==='Yes'">{{ form.readm90 || '—' }}</div></div>
+                    <div class="oc"><div class="ocl">90-Day Mortality</div><div class="ocv" [class.ocno]="form.mort90==='No'" [class.ocyes]="form.mort90==='Yes'">{{ form.mort90 || '—' }}</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="cardEdit['t5a']">
+              <div class="g2">
+                <div>
+                  <div class="fl" style="margin-bottom:6px">Post-Op Complications Present <span class="ner">OT-F B</span></div>
+                  <div class="rg">
+                    <label *ngFor="let o of yesNoOptions" class="ro" [class.sel]="form.postCompl === o.value"
+                           (click)="form.postCompl = o.value; isUnsaved = true;">
+                      <div class="ck">{{ form.postCompl === o.value ? '✓' : '' }}</div>{{ o.label }}
+                    </label>
+                  </div>
+                  <div *ngIf="form.postCompl === 'Yes'" style="margin-top:10px">
+                    <div class="fl" style="margin-bottom:5px">Complication(s) <span class="ner">OT-F C</span></div>
+                    <div class="mcs">
+                      <span *ngFor="let c of postComplChips" class="mc" [class.on]="hasChip(form.postComplList, c)"
+                            (click)="toggleChip('postComplList', c)">{{ c }}</span>
+                    </div>
+                    <div class="al al-t" style="margin-top:8px;margin-bottom:4px;font-size:10.5px">📌 NER OT-F: Rows D &amp; E repeat for each complication</div>
+                    <div *ngFor="let row of cdRows; let i = index" style="background:var(--s0);border:1px solid var(--s1);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--s4)">Complication {{ i + 1 }}</span>
+                        <button class="btn btn-d btn-xs" (click)="removeCDRow(i)">Remove</button>
+                      </div>
+                      <div class="fg fg2">
+                        <div><div class="fl">Complication Name <span class="ner">OT-F C</span></div>
+                          <input pInputText [(ngModel)]="row.compl" placeholder="e.g. Wound infection" (ngModelChange)="isUnsaved = true;" />
+                        </div>
+                        <div><div class="fl">Clavien-Dindo Grade <span class="ner">OT-F E</span></div>
+                          <select [(ngModel)]="row.grade" (ngModelChange)="isUnsaved = true;" style="width:100%">
+                            <option value="">— Select —</option>
+                            <option *ngFor="let g of clavienDindoGrades" [value]="g">{{ g }}</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div style="margin-top:8px"><div class="fl">Description <span class="ner">OT-F D</span></div>
+                        <textarea pInputTextarea [(ngModel)]="row.desc" rows="2" placeholder="Describe this complication…" (ngModelChange)="isUnsaved = true;"></textarea>
+                      </div>
+                    </div>
+                    <button class="btn btn-s btn-xs" style="margin-top:6px" (click)="addCDRow()">+ Add Complication with Grade</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="sh" style="margin-top:0">Outcome Metrics</div>
+                  <div class="fg fg2" style="gap:10px">
+                    <div *ngFor="let m of [['readm30','30-Day Re-Admission','OT-F F'],['mort30','30-Day Mortality','OT-F G'],['readm90','90-Day Re-Admission','OT-F H'],['mort90','90-Day Mortality','OT-F I']]">
+                      <div class="fl">{{ m[1] }} <span class="ner">{{ m[2] }}</span></div>
+                      <div class="rg">
+                        <label *ngFor="let o of yesNoOptions" class="ro" [class.sel]="form[m[0]] === o.value"
+                               (click)="form[m[0]] = o.value; isUnsaved = true;">
+                          <div class="ck">{{ form[m[0]] === o.value ? '✓' : '' }}</div>{{ o.label }}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <div class="chd"><div class="cico">📈</div><span class="ctitle">Recovery Milestone Tracker (auto-derived)</span></div>
+          <div class="cbd">
+            <div class="mst">
+              <div *ngFor="let m of [['Surgery Done',form.date],['Wound Reviewed',form.wReview],['Pathology Available',form.histoType ? 'HPE Done' : null],['Adjuvant Tx Ready',form.adjuvant?.length ? 'Planned' : null]]; let i = index" class="mss">
+                <div class="ms-dot" [class.done]="m[1]" [class.pend]="!m[1]">{{ i + 1 }}</div>
+                <div class="msl">{{ m[0] }}</div>
+                <div class="msdt">{{ m[1] ? (i === 0 ? formatDate(m[1]) : m[1]) : '—' }}</div>
+                <span class="mstg" [class.mstd]="m[1]" [class.mstp]="!m[1]">{{ m[1] ? 'Done' : 'Pending' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="g2" style="margin-top:14px">
+          <div class="card" [class.editing]="cardEdit['t5b']">
+            <div class="chd"><div class="cico">🩹</div><span class="ctitle">Wound Status &amp; Drains</span>
+              <button class="edbtn" [class.on]="cardEdit['t5b']" (click)="toggleCard('t5b')">{{ cardEdit['t5b'] ? '✓ Done' : '✏️ Edit' }}</button>
+            </div>
+            <div class="cbd">
+              <div *ngIf="!cardEdit['t5b']" class="fg fg2">
+                <div><div class="fl">Wound Status</div><div class="fv">{{ form.woundStatus || '—' }}</div></div>
+                <div><div class="fl">Last Review</div><div class="fv mono">{{ formatDate(form.wReview) }}</div></div>
+                <div><div class="fl">Drain 1</div><div class="fv">{{ form.d1st || '—' }}</div></div>
+                <div><div class="fl">Drain 2</div><div class="fv">{{ form.d2st || '—' }}</div></div>
+              </div>
+              <div *ngIf="cardEdit['t5b']">
+                <div class="fl" style="margin-bottom:6px">Wound Status</div>
+                <div class="rg" style="flex-direction:column;gap:5px">
+                  <label *ngFor="let o of woundStatusOptions" class="ro" [class.sel]="form.woundStatus === o.value"
+                         (click)="form.woundStatus = o.value; isUnsaved = true;">
+                    <div class="ck">{{ form.woundStatus === o.value ? '✓' : '' }}</div>{{ o.label }}
+                  </label>
+                </div>
+                <div class="fg fg2" style="margin-top:10px">
+                  <div><div class="fl">Last Review Date</div><input type="date" [(ngModel)]="form.wReview" (ngModelChange)="isUnsaved = true;" /></div>
+                  <div></div>
+                  <div><div class="fl">Drain 1 Status</div><p-dropdown [options]="drainStatusOptions" [(ngModel)]="form.d1st" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown></div>
+                  <div><div class="fl">Drain 1 Removal Date</div><input type="date" [(ngModel)]="form.d1rm" (ngModelChange)="isUnsaved = true;" /></div>
+                  <div><div class="fl">Drain 2 Status</div><p-dropdown [options]="drainStatusOptions" [(ngModel)]="form.d2st" (ngModelChange)="isUnsaved = true;" [style]="{'width':'100%'}" appendTo="body"></p-dropdown></div>
+                  <div><div class="fl">Drain 2 Removal Date</div><input type="date" [(ngModel)]="form.d2rm" (ngModelChange)="isUnsaved = true;" /></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" [class.editing]="cardEdit['t5d']">
+            <div class="chd"><div class="cico">📋</div><span class="ctitle">Handover Notes</span>
+              <button class="edbtn" [class.on]="cardEdit['t5d']" (click)="toggleCard('t5d')">{{ cardEdit['t5d'] ? '✓ Done' : '✏️ Edit' }}</button>
+            </div>
+            <div class="cbd">
+              <div *ngIf="!cardEdit['t5d']">
+                <div class="hn">{{ form.handover || '—' }}<div *ngIf="form.hnAuthor" class="hn-m">By: {{ form.hnAuthor }} → {{ form.hnTo }}</div></div>
+              </div>
+              <div *ngIf="cardEdit['t5d']">
+                <div><div class="fl">Handover Notes</div>
+                  <textarea pInputTextarea [(ngModel)]="form.handover" rows="4" placeholder="Summary for receiving team…" (ngModelChange)="isUnsaved = true;"></textarea>
+                </div>
+                <div class="fg fg2" style="margin-top:10px">
+                  <div><div class="fl">Author</div><input pInputText [(ngModel)]="form.hnAuthor" placeholder="Dr. Name" (ngModelChange)="isUnsaved = true;" /></div>
+                  <div><div class="fl">Handover To</div><input pInputText [(ngModel)]="form.hnTo" placeholder="Team / Doctor" (ngModelChange)="isUnsaved = true;" /></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><div *ngIf="activeTab === 't6'" class="tab-pane">
+        <div class="card">
+          <div class="chd"><div class="cico">📔</div><span class="ctitle">Case Logbook (OT-H)</span><span class="ner ot-i">OT-I</span></div>
+          <div class="cbd">
+            <div class="rep-filter">
+              <div class="fg fg2" style="flex:1;min-width:200px">
+                <div><div class="fl">From Date</div><p-calendar [(ngModel)]="logbookFilter.fromDate" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full"></p-calendar></div>
+                <div><div class="fl">To Date</div><p-calendar [(ngModel)]="logbookFilter.toDate" dateFormat="dd/mm/yy" [showIcon]="true" appendTo="body" styleClass="w-full"></p-calendar></div>
+              </div>
+              <div style="align-self:flex-end">
+                <button class="btn btn-p" 
+                >⬇ Export</button>
+                </div>
+            </div>
+            <p-table [value]="filteredLogbookRows" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,25,50]" styleClass="p-datatable-sm p-datatable-gridlines" responsiveLayout="scroll">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th *ngFor="let col of logbookCols" pSortableColumn="{{ col.field }}">{{ col.header }} <p-sortIcon field="{{ col.field }}"></p-sortIcon></th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-row>
+                <tr>
+                  <td>{{ row.date }}</td>
+                  <td>{{ row.patient }}</td>
+                  <td>{{ row.age }}</td>
+                  <td>{{ row.caseNo }}</td>
+                  <td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.preDx }}</td>
+                  <td>{{ row.name }}</td>
+                  <td>{{ row.unit }}</td>
+                  <td>{{ row.surgeon }}</td>
+                  <td>{{ row.role }}</td>
+                  <td><span class="chip ct">{{ row.type }}</span></td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </div>
+      </div></div></div></div><p-dialog header="New Surgical Procedure" [(visible)]="showNewProcModal" [modal]="true" [style]="{width:'540px', maxWidth:'94vw'}" [draggable]="false" [resizable]="false">
+  <div class="fg fg2" style="padding:4px 0">
+    <div>
+      <div class="fl">Date <span class="req">*</span></div>
+      <input type="date" [(ngModel)]="newProc.date" style="width:100%" />
+    </div>
+    <div>
+      <div class="fl">Case No.</div>
+      <input pInputText [(ngModel)]="newProc.caseNo" placeholder="Auto-generate if blank" style="width:100%" />
+    </div>
+    <div style="grid-column:span 2">
+      <div class="fl">Procedure Name <span class="req">*</span></div>
+      <input pInputText [(ngModel)]="newProc.name" placeholder="e.g. Modified Radical Mastectomy" style="width:100%" />
+      <small class="p-error" *ngIf="!newProc.name">Required</small>
+    </div>
+    <div>
+      <div class="fl">Unit</div>
+      <input pInputText [(ngModel)]="newProc.unit" placeholder="Unit name" style="width:100%" />
+    </div>
+    <div>
+      <div class="fl">Primary Surgeon</div>
+      <input pInputText [(ngModel)]="newProc.ps" placeholder="Dr. Name" style="width:100%" />
+    </div>
+    <div style="grid-column:span 2">
+      <div class="fl">Pre-Op Diagnosis</div>
+      <input pInputText [(ngModel)]="newProc.preDx" placeholder="e.g. Ca. Left Breast, IDC, cT2N1M0" style="width:100%" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button class="btn btn-s" (click)="showNewProcModal = false">Cancel</button>
+    <button class="btn btn-p" (click)="createNewProc()">Create Procedure</button>
+  </ng-template>
+</p-dialog>
