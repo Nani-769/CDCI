@@ -53,7 +53,7 @@ jobs:
       - name: Upload Angular build
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist/angular14
+          path: ./dist/CDCI
 
 
   # =========================
