@@ -26,10 +26,20 @@ describe('AppComponent', () => {
     expect(app.title).toEqual('angular14');
   });
 
+  // it('should render title', () => {
+  //   const fixture = TestBed.createComponent(AppComponent);
+  //   fixture.detectChanges();
+  //   const compiled = fixture.nativeElement as HTMLElement;
+  //   expect(compiled.querySelector('.content span')?.textContent).toContain('angular14 app is running!');
+  // });
+
   it('should render title', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.content span')?.textContent).toContain('angular14 app is running!');
-  });
+  const fixture = TestBed.createComponent(AppComponent);
+  fixture.detectChanges();
+
+  const compiled = fixture.nativeElement as HTMLElement;
+
+  expect(compiled.querySelector('h1')?.textContent)
+    .toContain('Welcome to CI/CD');
+});
 });
