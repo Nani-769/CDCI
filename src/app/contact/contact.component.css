@@ -1,7 +1,0 @@
-:host ::ng-deep .p-card {
-  padding: 1.5rem;
-}
-
-:host ::ng-deep .p-tabmenu .p-tabmenu-nav {
-  border: none;
-}
